@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { TextInput, View, Text, StyleSheet, FlatList, Image, TouchableOpacity, Alert } from 'react-native';
+import { TextInput, View, Text, StyleSheet, FlatList, TouchableOpacity, Alert } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 import { BASE_URL } from './config';
 
-const StudentData = (props) => {
+const StudentDataUpdate = (props) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [students, setStudents] = useState([]);
   const [filteredStudents, setFilteredStudents] = useState([]);
@@ -35,6 +37,10 @@ const StudentData = (props) => {
       console.log('Filtered fetched data:', filteredData);
       setStudents(filteredData);
       setIsLoading(false);
+      
+      // Store data in AsyncStorage
+      await AsyncStorage.setItem('students', JSON.stringify(filteredData));
+      
     } catch (error) {
       console.error('Error fetching data: ', error);
       setError(error);
@@ -63,16 +69,18 @@ const StudentData = (props) => {
     );
   };
 
-  const handleAddIconPress = () => {
-    Alert.alert(
-      "Choose Action",
-      "Do you want to add a new student or update an existing student?",
-      [
-        { text: "Add Student", onPress: () => props.navigation.navigate('AddStudent') },
-        { text: "Update Student", onPress: () => props.navigation.navigate('UpdateStudent') },
-        { text: "Cancel", style: "cancel" }
-      ]
-    );
+  const handleUpdatePress = async (item) => {
+    try {
+      // Store student_id in AsyncStorage
+      await AsyncStorage.setItem('student_id', item.student_id.toString());
+      await AsyncStorage.setItem('arid_no', item.arid_no);
+      // Navigate to UpdatePassword screen
+      props.navigation.navigate('UpdatedPassword');
+    } catch (error) {
+      console.error('Error storing student_id in AsyncStorage:', error);
+      console.error('Error storing Arid_No in AsyncStorage:', error);
+      // Handle error
+    }
   };
 
   const renderStudent = ({ item }) => (
@@ -81,19 +89,9 @@ const StudentData = (props) => {
         <Text style={styles.studentName} numberOfLines={1} ellipsizeMode="tail">{item.name || 'N/A'}</Text>
         <Text style={styles.aridNoText}>{item.arid_no || 'N/A'}</Text>
       </TouchableOpacity>
-      <View style={styles.imageContainer}>
-        {item.profile_image ? (
-          <Image
-            source={{ uri: `${BASE_URL}/FinancialAidAllocation/Content/ProfileImages/` + item.profile_image }}
-            style={styles.studentImage}
-          />
-        ) : (
-          <Image
-            source={require('./logo.png')}
-            style={styles.studentImage}
-          />
-        )}
-      </View>
+      <TouchableOpacity style={styles.updateButton} onPress={() => handleUpdatePress(item)}>
+        <Text style={styles.updateButtonText}>Update</Text>
+      </TouchableOpacity>
     </View>
   );
 
@@ -116,15 +114,11 @@ const StudentData = (props) => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.name}>Students List</Text>
-        <TouchableOpacity onPress={handleAddIconPress}>
-          <Image source={require('./Add.png')} style={styles.icon} />
-        </TouchableOpacity>
+        <Text style={styles.name}>Students Update</Text>
       </View>
       <View style={styles.horizontalLine} />
 
       <View style={styles.searchBarContainer}>
-        <Image source={require('./Search.png')} style={styles.searchIcon} />
         <TextInput
           style={styles.searchBar}
           placeholder="Search by ARID NO"
@@ -155,12 +149,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 20,
-  },
-  icon: {
-    width: 30,
-    height: 30,
-    borderRadius: 25,
-    marginTop: 10,
   },
   name: {
     fontWeight: 'bold',
@@ -198,17 +186,15 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: 'gray',
   },
-  imageContainer: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: 'gray',
-    overflow: 'hidden',
+  updateButton: {
+    backgroundColor: 'blue',
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderRadius: 5,
   },
-  studentImage: {
-    width: '100%',
-    height: '100%',
-    resizeMode: 'cover',
+  updateButtonText: {
+    color: 'white',
+    fontSize: 16,
   },
   searchBarContainer: {
     flexDirection: 'row',
@@ -220,11 +206,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     paddingHorizontal: 10,
   },
-  searchIcon: {
-    width: 20,
-    height: 20,
-    marginRight: 10,
-  },
   searchBar: {
     flex: 1,
     height: 40,
@@ -232,4 +213,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default StudentData;
+export default StudentDataUpdate;

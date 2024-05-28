@@ -6,7 +6,7 @@ import passwordIcon from './password.png';
 import hidePasswordIcon from './hide.png';
 import showPasswordIcon from './show.png';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import BASE_URL from "./config";
+import {BASE_URL} from "./config";
 
 const Login = (props) => {
   const [username, setUserName] = useState("");
@@ -31,7 +31,7 @@ const Login = (props) => {
       return;
     }
   
-    fetch(`http://192.168.47.189/FinancialAidAllocation/api/User/Login?username=${username}&password=${password}`, {
+    fetch(`${BASE_URL}/FinancialAidAllocation/api/User/Login?username=${username}&password=${password}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -50,7 +50,13 @@ const Login = (props) => {
           const profileId = data.profileId;
           AsyncStorage.setItem('profileId', profileId.toString());
           AsyncStorage.setItem('savedUsername', username);
-        } else {
+        } else if (role === 4) {
+          props.navigation.navigate("CommitteeDashBoard");
+          const profileId = data.profileId;
+          AsyncStorage.setItem('profileId', profileId.toString());
+          AsyncStorage.setItem('savedUsername', username);
+        } 
+        else {
           Alert.alert("Error", "Invalid role.");
         }
       })

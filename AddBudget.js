@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, StyleSheet, FlatList, Image, TouchableOpacity, ScrollView } from 'react-native';
-
+import { BASE_URL } from './config';
 const Addbudget = (props) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [facultyMembers, setFacultyMembers] = useState([]);
@@ -15,7 +15,7 @@ const Addbudget = (props) => {
 
   const fetchData = async () => {
     try {
-      const response = await fetch('http://192.168.47.189/FinancialAidAllocation/api/Admin/BudgetHistory');
+      const response = await fetch(`${BASE_URL}/FinancialAidAllocation/api/Admin/BudgetHistory`);
       const data = await response.json();
       console.log('Fetched data:', data); // Ensure data is fetched successfully
       setFacultyMembers(data);

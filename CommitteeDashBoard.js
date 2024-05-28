@@ -3,26 +3,45 @@ import { View, Text, StyleSheet, TextInput, FlatList, TouchableOpacity } from 'r
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BASE_URL } from './config'; // Ensure this URL is correct
 
-const NeedBaseApplication = (props) => {
+const CommitteeMemberDashboard = (props) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [MeritBaseShortListing, setMeritBaseShortListing] = useState([]);
   const [filteredMeritBaseShortListing, setFilteredMeritBaseShortListing] = useState([]);
-  
+  const [profileId , setProfileId] = useState(null);
+
   useEffect(() => {
-    fetchData();
+    getStoredProfileId(); // Fetch profileId from AsyncStorage
   }, []);
 
   useEffect(() => {
-    filterData();
+    fetchData(); // Fetch data initially
+  }, [profileId]); // Fetch data whenever profileId changes
+
+  useEffect(() => {
+    filterData(); // Filter data whenever searchQuery changes
   }, [searchQuery]);
 
-  const fetchData = async () => {
+  const getStoredProfileId = async () => {
     try {
-      const response = await fetch(`${BASE_URL}/FinancialAidAllocation/api/Admin/ApplicationWithSuggestion`);
+      const storedProfileId = await AsyncStorage.getItem('profileId');
+      if (storedProfileId !== null) {
+        setProfileId(storedProfileId);
+        fetchData(storedProfileId); // Call fetchData with the storedProfileId
+      } else {
+        console.log('Profile ID not found in AsyncStorage');
+      }
+    } catch (error) {
+      console.error('Error retrieving profile ID from AsyncStorage:', error);
+    }
+  };
+  
+  const fetchData = async (profileId) => {
+    try {
+      const response = await fetch(`${BASE_URL}/FinancialAidAllocation/api/Committee/GetApplication?id=${profileId}`);
       if (response.ok) {
         const data = await response.json();
         console.log('Fetched data:', data); // Check the fetched data
-        setMeritBaseShortListing(data);
+        
         setFilteredMeritBaseShortListing(data);
       } else {
         console.error('Failed to fetch data:', response.statusText);
@@ -31,14 +50,15 @@ const NeedBaseApplication = (props) => {
       console.error('Error fetching data:', error);
     }
   };
+  
 
   const filterData = () => {
     if (searchQuery.trim() === '') {
       setFilteredMeritBaseShortListing(MeritBaseShortListing);
     } else {
       const filtered = MeritBaseShortListing.filter(item =>
-        item.re.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.re.arid_no.toLowerCase().includes(searchQuery.toLowerCase())
+        item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.arid_no.toLowerCase().includes(searchQuery.toLowerCase())
       );
       setFilteredMeritBaseShortListing(filtered);
     }
@@ -47,7 +67,7 @@ const NeedBaseApplication = (props) => {
   const handleApplicationClick = async (item) => {
     try {
       await AsyncStorage.setItem('selectedApplication', JSON.stringify(item));
-      props.navigation.navigate('ViewApplication', { applicationData: item });
+     // props.navigation.navigate('ViewApplication', { applicationData: item });
       console.log('Stored data:', item); // Log the stored data to console
     } catch (error) {
       console.error('Error storing data:', error);
@@ -57,8 +77,8 @@ const NeedBaseApplication = (props) => {
   const renderFacultyMember = ({ item }) => (
     <View style={styles.facultyMemberContainer}>
       <View>
-        {item.re.name && <Text style={styles.facultyMemberName}>{item.re.name}</Text>}
-        {item.re.arid_no && <Text style={styles.aridNoText}>{item.re.arid_no}</Text>}
+        {item.name && <Text style={styles.facultyMemberName}>{item.name}</Text>}
+        {item.arid_no && <Text style={styles.aridNoText}>{item.arid_no}</Text>}
         <TouchableOpacity onPress={() => handleApplicationClick(item)}>
           <Text style={styles.Text}>Click Here To See The Application</Text>
         </TouchableOpacity>
@@ -73,7 +93,7 @@ const NeedBaseApplication = (props) => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.name} onPress={handleHeaderPress}>Need Base Application</Text>
+        <Text style={styles.name} onPress={handleHeaderPress}>Committee Dash Board</Text>
       </View>
       <View style={styles.frombox}>
         <Text style={styles.wel}>Application Left</Text>
@@ -92,7 +112,7 @@ const NeedBaseApplication = (props) => {
       <FlatList
         data={filteredMeritBaseShortListing}
         renderItem={renderFacultyMember}
-        keyExtractor={(item, index) => item.re.applicationID.toString()} // Assuming applicationID is a unique identifier
+        keyExtractor={(item, index) => item.applicationID.toString()} // Assuming applicationID is a unique identifier
       />
     </View>
   );
@@ -186,4 +206,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default NeedBaseApplication;
+export default CommitteeMemberDashboard;

@@ -1,74 +1,122 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, FlatList, Image, TouchableOpacity, ScrollView } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, Image, TextInput, Button, StyleSheet, FlatList, RefreshControl } from 'react-native';
+import { BASE_URL } from './config';
 
-const Policies = (props) => {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [Policies, setPolicies] = useState([
-    
+const Policy = (props) => {
+  const [policyList, setPolicyList] = useState([]);
+  const [searchText, setSearchText] = useState('');
+  const [filteredPolicyList, setFilteredPolicyList] = useState([]);
+  const [refreshing, setRefreshing] = useState(false);
 
-  { id: 1, name: 'About University Policies: A student can avail only one scholarship at a time.' },
-     { id: 2, name: 'Another policy or note here.' },
-     { id: 3, name: 'About University Policies: A student can avail only one scholarship at a time.' },
-     { id: 4, name: 'About University Policies: A student can avail only one scholarship at a time.' },
-     { id: 5, name: 'About University Policies: A student can avail only one scholarship at a time.' },
-     { id: 6, name: 'About University Policies: A student can avail only one scholarship at a time.' },
-     { id: 7, name: 'About University Policies: A student can avail only one scholarship at a time.' },
-     { id: 8, name: 'About University Policies: A student can avail only one scholarship at a time.' },
-  ]);
+  useEffect(() => {
+    getPolicies();
+  }, []);
 
-  const renderPolicy = ({ item }) => {
-    if (item.category === 'heading') {
-      return (
-        <View style={styles.headingContainer}>
-          <Text style={styles.headingText}>{item.name}</Text>
-        </View>
-      );
+  useEffect(() => {
+    filterPolicies();
+  }, [searchText, policyList]);
+
+  const getPolicies = async () => {
+    try {
+      const res = await fetchPolicies();
+      if (res.status === 200) {
+        const policies = await res.json();
+        console.log('Fetched policies:', policies);
+        setPolicyList(policies);
+        setFilteredPolicyList(policies);
+      } else {
+        console.error('Failed to fetch policies:', res.statusText);
+      }
+    } catch (error) {
+      console.error('Error fetching policies:', error);
+    }
+  };
+
+  const fetchPolicies = async () => {
+    const url = `${BASE_URL}/FinancialAidAllocation/api/Admin/getPolicies`;
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    return response;
+  };
+
+  const filterPolicies = () => {
+    if (searchText.trim() === '') {
+      setFilteredPolicyList(policyList);
     } else {
-      return (
-        <View style={styles.policyContainer}>
-          <Text style={styles.policyText}>{item.name}</Text>
-        </View>
+      const filtered = policyList.filter(policy =>
+        policy.p.policyfor && policy.p.policyfor.toLowerCase().includes(searchText.toLowerCase())
       );
+      setFilteredPolicyList(filtered);
     }
   };
 
   const handleAddIconPress = () => {
-    // Handle add icon press action
     props.navigation.navigate('ADDPolicies');
   };
 
-  return (
+  const renderItem = ({ item }) => {
+    let val1Label = 'Val1';
+    if (item.p.policy1 === 'CGPA') {
+      val1Label = 'Required CGPA';
+    } else if (item.p.policy1 === 'Strength') {
+      val1Label = 'Min Strength';
+    }
 
+    return (
+      <View style={styles.policyContainer}>
+        <Text style={styles.policyForText}>Policy For: {item.p.policyfor}</Text>
+        <Text style={styles.sessionText}>Session: {item.p.session}</Text>
+        <Text style={styles.descriptionText}>Description: {item.c.description}</Text>
+        <Text style={styles.policyText}>Policy: {item.p.policy1}</Text>
+        <Text style={styles.policyText}>{val1Label}: {item.c.val1}</Text>
+        <Text style={styles.policyText}>Strength: {item.c.strength?.toString()}</Text>
+      </View>
+    );
+  };
+
+  const handleSearch = () => {
+    filterPolicies();
+  };
+
+  const onRefresh = async () => {
+    console.log('Refreshing policies...');
+    setRefreshing(true);
+    await getPolicies();
+    setRefreshing(false);
+    console.log('Policies refreshed.');
+  };
+
+  return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.name}>POLICIES</Text>
+        <Text style={styles.name}>Policies</Text>
         <TouchableOpacity onPress={handleAddIconPress}>
           <Image source={require('./Add.png')} style={styles.icon} />
         </TouchableOpacity>
       </View>
       <View style={styles.horizontalLine} />
-      <View style={styles.frombox}>
-        <Text style={styles.wel}>Apply Before</Text>
-        <Text style={styles.nam}>11-MAY-2024</Text>
-        
-      </View>
-      <View style={styles.searchBarContainer}>
-        <Image source={require('./Search.png')} style={styles.searchIcon} />
+      <View style={styles.searchContainer}>
         <TextInput
-          style={styles.searchBar}
-          placeholder="Search Policies"
-          placeholderTextColor="black"
-          value={searchQuery}
-          onChangeText={setSearchQuery}
+          style={styles.searchInput}
+          value={searchText}
+          onChangeText={setSearchText}
+          placeholder="Search by policy for"
         />
+        <Button title="Search" onPress={handleSearch} />
       </View>
-      <ScrollView>
-        <FlatList
-          data={Policies}
-          renderItem={renderPolicy}
-          keyExtractor={(item) => item.id.toString()}
-        />
-      </ScrollView>
+      <FlatList
+        data={filteredPolicyList}
+        renderItem={renderItem}
+        keyExtractor={(item, index) => index.toString()}
+        contentContainerStyle={styles.policyListContainer}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      />
     </View>
   );
 };
@@ -76,16 +124,26 @@ const Policies = (props) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
-    paddingHorizontal: 20,
-    paddingTop: 20,
+    padding: 16,
     backgroundColor: '#82b7bf',
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 30,
+    marginTop: 20,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 20,
+  },
+  icon: {
+    width: 30,
+    height: 30,
+    borderRadius: 25,
+    marginTop: 10,
   },
   name: {
     fontWeight: 'bold',
@@ -101,78 +159,46 @@ const styles = StyleSheet.create({
     width: '100%',
     marginTop: 1,
   },
-  searchBarContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 20,
-    marginTop: 20,
-    borderWidth: 1,
-    borderColor: 'white',
-    borderRadius: 5,
-    backgroundColor: 'white',
-    paddingHorizontal: 10,
-  },
-  searchIcon: {
-    width: 20,
-    height: 20,
-    marginRight: 10,
-  },
-  searchBar: {
+  searchInput: {
     flex: 1,
     height: 40,
-    color: 'black',
+    borderWidth: 1,
+    borderColor: 'black',
+    borderRadius: 4,
+    marginRight: 10,
+    paddingHorizontal: 10,
+  },
+  policyListContainer: {
+    flexGrow: 1,
   },
   policyContainer: {
-    backgroundColor: 'white',
-    borderRadius: 10,
     padding: 10,
-    marginBottom: 20,
+    backgroundColor: 'white',
+    borderRadius: 5,
+    marginBottom: 10,
+  },
+  policyForText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: 'red',
+    marginBottom: 5,
+  },
+  sessionText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: 'green',
+    marginBottom: 5,
+  },
+  descriptionText: {
+    fontSize: 20,
+    color: 'black',
+    marginBottom: 10,
+    fontWeight: 'bold',
   },
   policyText: {
-    fontSize: 18,
+    fontSize: 16,
     color: 'black',
-  },
-  headingContainer: {
-    backgroundColor: 'lightgray',
-    borderRadius: 10,
-    padding: 10,
-    marginBottom: 20,
-  },
-  headingText: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: 'black',
-  },
-  icon: {
-    width: 30,
-    height: 30,
-    borderRadius: 25,
-    marginTop: 10,
-  },
-  frombox: {
-    backgroundColor: '#fff',
-    padding: 20,
-    height:100,
-    width:320,
-    borderBottomWidth: 1,
-    marginBottom: 10,
-    borderRadius: 30,
-    marginTop:10,
-  },
-  wel: {
-    fontSize: 30,
-    fontWeight: 'bold',
-    marginBottom: 10,
-    color: 'black',
-    marginLeft:20
-  },
-  nam: {
-    fontSize: 30,
-    fontWeight: 'bold',
-    marginBottom: 10,
-    color: 'red',
-    textAlign: 'center',
   },
 });
 
-export default Policies;
+export default Policy;

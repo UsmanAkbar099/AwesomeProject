@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { TextInput, View, Text, StyleSheet, FlatList, Image } from 'react-native';
+import { TextInput, View, Text, StyleSheet, FlatList, Image, TouchableOpacity } from 'react-native';
 import { BASE_URL } from './config';
-
+import AsyncStorage from '@react-native-async-storage/async-storage';
 const AcceptedApplication = (props) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [facultyMembers, setFacultyMembers] = useState([]);
@@ -20,7 +20,7 @@ const AcceptedApplication = (props) => {
       setFilteredFacultyMembers(facultyMembers);
     } else {
       const filteredData = facultyMembers.filter((member) =>
-        member.s.name.toLowerCase().includes(searchQuery.toLowerCase())
+        member.re.name.toLowerCase().includes(searchQuery.toLowerCase())
       );
       setFilteredFacultyMembers(filteredData);
     }
@@ -39,23 +39,39 @@ const AcceptedApplication = (props) => {
       setIsLoading(false);
     }
   };
-  
+
+  const handlepress = async (item) => {
+    try {
+      await AsyncStorage.setItem('selectedApplication', JSON.stringify(item));
+      props.navigation.navigate('ViewApplication', { applicationData: item });
+      console.log('Stored data:', item); // Log the stored data to console
+    } catch (error) {
+      console.error('Error storing data:', error);
+    }
+  };
+
+
   const renderFacultyMember = ({ item }) => (
-    <View style={styles.facultyMemberContainer}>
-      <View style={styles.facultyMemberInfo}>
-        <Text style={styles.facultyMemberName}>{item.s.name}</Text>
-        <Text style={styles.aridNoText}>{item.s.arid_no}</Text>
-        <Text style={styles.aridNoText}>{item.s.profile_image || "No Image"}</Text>
+    <TouchableOpacity onPress={() => handlepress(item)}>
+      <View style={styles.facultyMemberContainer}>
+        <View style={styles.facultyMemberInfo}>
+        {item.re.name && <Text style={styles.facultyMemberName}>{item.re.name}</Text>}
+        {item.re.arid_no && <Text style={styles.aridNoText}>{item.re.arid_no}</Text>}
+        </View>
+        {item.re.profile_image ? (
+          <Image
+            source={{ uri: `${BASE_URL}/FinancialAidAllocation/Content/ProfileImages/${item.re.profile_image}` }}
+            style={styles.facultyMemberImage}
+          />
+        ) : (
+          <Image
+            source={require('./logo.png')}
+            style={styles.facultyMemberImage}
+          />
+        )}
       </View>
-      {item.s.profile_image && (
-        <Image
-          source={{ uri: item.s.profile_image }} // Assuming profile_image is a URI
-          style={styles.facultyMemberImage}
-        />
-      )}
-    </View>
+    </TouchableOpacity>
   );
-  
   
   if (isLoading) {
     return (
@@ -104,7 +120,6 @@ const AcceptedApplication = (props) => {
     </View>
   );
 };
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -124,7 +139,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 10,
     color: 'black',
-    marginLeft: 20
+    marginLeft: 20,
   },
   nam: {
     fontSize: 20,
@@ -133,7 +148,6 @@ const styles = StyleSheet.create({
     color: 'gray',
     textAlign: 'center',
   },
-
   name: {
     fontWeight: 'bold',
     textTransform: 'uppercase',
@@ -215,6 +229,15 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 40,
     color: 'black',
+  },
+  facultyMemberImage: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+  },
+  noImageText: {
+    fontSize: 16,
+    color: 'gray',
   },
 });
 

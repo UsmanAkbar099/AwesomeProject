@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { TextInput, View, Text, StyleSheet, FlatList, Image } from 'react-native';
+import { BASE_URL } from './config';
 
-const RejectedApplication = () => {
+const RejectedApplication = (props) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [facultyMembers, setFacultyMembers] = useState([]);
   const [filteredFacultyMembers, setFilteredFacultyMembers] = useState([]);
@@ -9,17 +10,15 @@ const RejectedApplication = () => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    // Fetch data from API
     fetchData();
   }, []);
 
   useEffect(() => {
-    // Filter faculty members based on search query
     if (searchQuery.trim() === '') {
       setFilteredFacultyMembers(facultyMembers);
     } else {
       const filteredData = facultyMembers.filter((member) =>
-        member.ap.s.name.toLowerCase().includes(searchQuery.toLowerCase())
+        member.re.name.toLowerCase().includes(searchQuery.toLowerCase())
       );
       setFilteredFacultyMembers(filteredData);
     }
@@ -27,10 +26,10 @@ const RejectedApplication = () => {
 
   const fetchData = async () => {
     try {
-      const response = await fetch('http://192.168.47.189/FinancialAidAllocation/api/Admin/RejectedApplication');
+      const response = await fetch(`${BASE_URL}/FinancialAidAllocation/api/Admin/RejectedApplication`);
       const data = await response.json();
+      console.log('Fetched data:', data);
       setFacultyMembers(data);
-      setFilteredFacultyMembers(data);
       setIsLoading(false);
     } catch (error) {
       console.error('Error fetching data: ', error);
@@ -39,22 +38,25 @@ const RejectedApplication = () => {
     }
   };
 
-  const renderFacultyMember = ({ item }) => {
-    const { ap, f } = item;
-    const { s } = ap;
-    const { aidtype, applicationStatus } = f;
-
-    return (
-      <View style={styles.facultyMemberContainer}>
-        <View style={styles.facultyMemberInfo}>
-          <Text style={styles.facultyMemberName}>{s.name || 'Unknown'}</Text>
-          <Text style={styles.aridNoText}>{s.arid_no || 'N/A'}</Text>
-          <Text style={styles.aridNoText}>Aid Type: {aidtype || 'N/A'}</Text>
-          <Text style={styles.aridNoText}>Application Status: {applicationStatus || 'N/A'}</Text>
-        </View>
+  const renderFacultyMember = ({ item }) => (
+    <View style={styles.facultyMemberContainer}>
+      <View style={styles.facultyMemberInfo}>
+        <Text style={styles.facultyMemberName}>{item.re.name}</Text>
+        <Text style={styles.aridNoText}>{item.re.arid_no}</Text>
       </View>
-    );
-  };
+      {item.re.profile_image ? (
+        <Image
+          source={{ uri: `${BASE_URL}/FinancialAidAllocation/Content/ProfileImages/${item.re.profile_image}` }}
+          style={styles.facultyMemberImage}
+        />
+      ) : (
+        <Image
+          source={require('./logo.png')}
+          style={styles.facultyMemberImage}
+        />
+      )}
+    </View>
+  );
 
   if (isLoading) {
     return (
@@ -132,7 +134,6 @@ const styles = StyleSheet.create({
     color: 'gray',
     textAlign: 'center',
   },
-
   name: {
     fontWeight: 'bold',
     textTransform: 'uppercase',
@@ -214,6 +215,15 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 40,
     color: 'black',
+  },
+  facultyMemberImage: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+  },
+  noImageText: {
+    fontSize: 16,
+    color: 'gray',
   },
 });
 

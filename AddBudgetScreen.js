@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, TextInput, Button, StyleSheet, Text } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
+import { BASE_URL } from './config';
 const AddBudgetScreen = () => {
   const [budget, setBudget] = useState('');
   const [storedBudget, setStoredBudget] = useState(null);
@@ -38,7 +38,7 @@ const AddBudgetScreen = () => {
   };
 
   const postBudgetToAPI = async (budget) => {
-    const response = await fetch(`http://192.168.47.189/FinancialAidAllocation/api/Admin/AddBudget?amount=${budget}`, {
+    const response = await fetch(`${BASE_URL}/FinancialAidAllocation/api/Admin/AddBudget?amount=${budget}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

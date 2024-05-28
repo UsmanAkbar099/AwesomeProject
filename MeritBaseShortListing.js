@@ -1,77 +1,66 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TextInput, FlatList, Image, TouchableOpacity, ScrollView } from 'react-native';
-import RNPickerSelect from 'react-native-picker-select';
-import AsyncStorage from '@react-native-async-storage/async-storage'; // Import AsyncStorage
+import { View, Text, StyleSheet, TextInput, FlatList, Image, TouchableOpacity, Alert } from 'react-native';
+import { BASE_URL } from './config';
 
 const MeritBaseShortListing = (props) => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedOption, setSelectedOption] = useState(null);
   const [MeritBaseShortListing, setMeritBaseShortListing] = useState([]);
   const [filteredData, setFilteredData] = useState([]);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch('http://192.168.47.189/FinancialAidAllocation/api/Admin/MeritBaseShortListing');
+        const response = await fetch(`${BASE_URL}/FinancialAidAllocation/api/Admin/GetMeritBaseShortListedStudent`);
         if (!response.ok) {
           throw new Error('Failed to fetch data');
         }
         const data = await response.json();
-  
+
         setMeritBaseShortListing(data);
         setFilteredData(data); // Set filtered data initially
       } catch (error) {
         console.error('Error fetching data:', error);
       }
     };
-  
+
     fetchData();
   }, []);
+
   const filterData = (query) => {
-    // Check if MeritBaseShortListing is not empty
     if (MeritBaseShortListing.length > 0) {
       const filtered = MeritBaseShortListing.filter((item) =>
-        item.s.arid_no.toLowerCase().includes(query.toLowerCase())
+        item.arid_no.toLowerCase().includes(query.toLowerCase())
       );
       setFilteredData(filtered);
     }
   };
 
-  
-  
-  
+  const handleNamePress = (item) => {
+    Alert.alert(
+      "Student Details",
+      `Name: ${item.name}\nStudent ID: ${item.student_id}\nARID NO: ${item.arid_no}\nSemester: ${item.semester}\nSection: ${item.section}\nCGPA: ${item.cgpa}`,
+      [{ text: "OK" }]
+    );
+  };
 
   const renderFacultyMember = ({ item }) => (
     <View style={styles.facultyMemberContainer}>
-      <View>
-        <Text style={styles.facultyMemberName}>{item.s.name}</Text>
-        <Text style={styles.aridNoText}>{item.s.arid_no}</Text>
-      </View>
-      <View style={styles.buttonsContainer}>
-        <TouchableOpacity onPress={() => handleAddButtonPress(item)}>
-          <View style={styles.addButton}>
-            <Text style={styles.addButtonText}>Accept</Text>
-          </View>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => handleRejectButtonPress(item.id)}>
-          <View style={styles.rejectButton}>
-            <Text style={styles.rejectButtonText}>Reject</Text>
-          </View>
-        </TouchableOpacity>
+      <TouchableOpacity style={styles.nameContainer} onPress={() => handleNamePress(item)}>
+        <Text style={styles.facultyMemberName} numberOfLines={1} ellipsizeMode="tail">{item.name}</Text>
+        <Text style={styles.aridNoText}>{item.arid_no}</Text>
+      </TouchableOpacity>
+      <View style={styles.imageContainer}>
+        <Image
+          source={
+            item.gender === 'M'
+              ? require('./Male.png')
+              : require('./Female.png')
+          }
+          style={styles.genderImage}
+        />
       </View>
     </View>
   );
-  
-  
-  const handleAddButtonPress = (item) => {
-    // Accessing id from nested properties
-    const facultyId = item.m.id || item.s.student_id;
-    console.log('Accept button pressed for faculty with ID:', facultyId);
-  };
-  
-  const handleRejectButtonPress = (facultyId) => {
-    console.log('Reject button pressed for faculty with ID:', facultyId);
-  };
 
   return (
     <View style={styles.container}>
@@ -82,35 +71,27 @@ const MeritBaseShortListing = (props) => {
       <View style={styles.searchBarContainer}>
         <Image source={require('./Search.png')} style={styles.searchIcon} />
         <TextInput
-  style={styles.searchBar}
-  placeholder="ARID NO#"
-  placeholderTextColor="black"
-  value={searchQuery}
-  onChangeText={(text) => {
-    setSearchQuery(text);
-    filterData(text);
-  }}
-/>
-
+          style={styles.searchBar}
+          placeholder="ARID NO#"
+          placeholderTextColor="black"
+          value={searchQuery}
+          onChangeText={(text) => {
+            setSearchQuery(text);
+            filterData(text);
+          }}
+        />
       </View>
-      
-      
+
       {MeritBaseShortListing.length === 0 ? (
-  <Text>Loading...</Text>
-) : (
-  <FlatList
-  data={filteredData}
-  renderItem={renderFacultyMember}
-  keyExtractor={(item, index) => (item.id !== undefined ? item.id.toString() : index.toString())}
-/>
-
-
-)}
-
-
-      
+        <Text>Loading...</Text>
+      ) : (
+        <FlatList
+          data={filteredData}
+          renderItem={renderFacultyMember}
+          keyExtractor={(item, index) => (item.m?.id?.toString() || item.s?.student_id?.toString() || index.toString())}
+        />
+      )}
     </View>
-    
   );
 };
 
@@ -173,6 +154,10 @@ const styles = StyleSheet.create({
     width: '100%',
     padding: 10,
   },
+  nameContainer: {
+    flex: 1,
+    marginRight: 10,
+  },
   facultyMemberName: {
     fontSize: 20,
     color: 'black',
@@ -182,57 +167,16 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: 'gray',
   },
-  buttonsContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  addButton: {
-    backgroundColor: 'green',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 5,
-    marginRight: 10,
-  },
-  addButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
-  },
-  rejectButton: {
-    backgroundColor: 'red',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 5,
-  },
-  rejectButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
-  },
-  input: {
-    backgroundColor: '#ffffff',
-    color: 'black', // Set text color to black
-    borderRadius: 10,
-    width: '90%',
+  imageContainer: {
+    width: 50,
     height: 50,
-    borderRadius: 5,
-    paddingHorizontal: 20,
-    marginBottom: 15,
+    borderRadius: 25,
+    overflow: 'hidden',
   },
-  inputs: {
-    fontWeight: 'bold',
-    textTransform: 'uppercase',
-    paddingVertical: 1,
-    color: 'black',
-    fontSize: 18,
-    paddingHorizontal: 10,
-    marginBottom: 2,
-    alignSelf: 'flex-start',
-    justifyContent: 'flex-start',
-    marginLeft: 10,
-  },
-  pickerContainer: {
-    marginTop: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
+  genderImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
   },
 });
 

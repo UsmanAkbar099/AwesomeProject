@@ -1,42 +1,100 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, Image, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, Image, Alert } from 'react-native';
 import { launchImageLibrary } from 'react-native-image-picker';
+import { BASE_URL } from './config';
 
 const AddFacultyMembers = () => {
     const [name, setName] = useState('');
-    const [contactInfo, setContactInfo] = useState('');
-    const [avatar, setAvatar] = useState(null);
+    const [contact, setContact] = useState('');
+    const [password, setPassword] = useState('');
+    const [pic, setPic] = useState(null);
 
-    const handleAdd = () => {
-        // Add faculty member logic goes here
-        console.log('Add Faculty Member');
+    const selectImage = () => {
+        launchImageLibrary({ mediaType: 'photo' }, response => {
+            if (response.assets && response.assets.length > 0) {
+                setPic(response.assets[0].uri);
+            }
+        });
+    };
+
+    const validatePhoneNumber = (phoneNumber) => {
+        const regex = /^\d{11}$/; // Assumes a 10-digit phone number
+        return regex.test(phoneNumber);
+    };
+
+    const handleAdd = async () => {
+        if (!name || !contact || !password) {
+            Alert.alert('Validation Error', 'Please fill out all fields');
+            return;
+        }
+
+        if (!validatePhoneNumber(contact)) {
+            Alert.alert('Validation Error', 'Please enter a valid contact number');
+            return;
+        }
+
+        const formData = new FormData();
+        if (pic) {
+            formData.append('pic', {
+                uri: pic,
+                type: 'image/jpeg',
+                name: 'profile.jpg',
+            });
+        }
+        formData.append('name', name);
+        formData.append('contact', contact);
+        formData.append('password', password);
+
+        console.log('FormData:', JSON.stringify(formData));
+
+        try {
+            const response = await fetch(`${BASE_URL}/FinancialAidAllocation/api/Admin/AddFacultyMember`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+                body: formData,
+            });
+
+            if (response.ok) {
+                Alert.alert('Success', 'Faculty member added successfully');
+                // Reset form fields
+                setName('');
+                setContact('');
+                setPassword('');
+                setPic(null);
+            } else {
+                const errorText = await response.text();
+                console.error('Failed to add faculty member:', errorText);
+                Alert.alert('Error', errorText || 'Failed to add faculty member. Please try again later.');
+            }
+        } catch (error) {
+            console.error('Error adding faculty member:', error);
+            Alert.alert('Error', 'Network request failed. Please check your network connection and server.');
+        }
     };
 
     const handleCancel = () => {
-        // Cancel logic goes here
-        console.log('Cancel');
-    };
-
-    const selectImage = () => {
-        launchImageLibrary({ mediaType: 'photo' }, (response) => {
-            console.log('Image picker response:', response);
-            if (!response.didCancel) {
-                const selectedImageUri = response.assets[0].uri; // Extract URI from assets array
-                console.log('Selected image URI:', selectedImageUri);
-                setAvatar(selectedImageUri);
-            } else {
-                console.log('Image selection cancelled.');
-            }
-        });
+        // Clear all input fields
+        setName('');
+        setContact('');
+        setPassword('');
+        setPic(null);
     };
 
     return (
         <View style={styles.container}>
             <Text style={styles.name}>Add Faculty Member</Text>
             <View style={styles.horizontalLine} />
-            
+
             <TouchableOpacity style={styles.selectImageButton} onPress={selectImage}>
-                <Image source={require('./cameras.png')} style={styles.cameraIcon} />
+                <View style={styles.imageContainer}>
+                    {pic ? (
+                        <Image source={{ uri: pic }} style={styles.selectedImage} />
+                    ) : (
+                        <Text style={styles.selectImageText}>Select Profile Image</Text>
+                    )}
+                </View>
             </TouchableOpacity>
 
             <Text style={styles.inputs}>Name</Text>
@@ -52,11 +110,18 @@ const AddFacultyMembers = () => {
                 style={styles.input}
                 placeholder="Contact Info"
                 placeholderTextColor="#333333"
-                onChangeText={text => setContactInfo(text)}
-                value={contactInfo}
+                onChangeText={text => setContact(text)}
+                value={contact}
             />
-
-            {avatar && <Image source={{ uri: avatar }} style={styles.selectedImage} />}
+            <Text style={styles.inputs}>Password</Text>
+            <TextInput
+                style={styles.input}
+                placeholder="Password"
+                placeholderTextColor="#333333"
+                onChangeText={text => setPassword(text)}
+                value={password}
+                secureTextEntry
+            />
 
             <TouchableOpacity style={[styles.button, { backgroundColor: 'green' }]} onPress={handleAdd}>
                 <Text style={styles.buttonText}>Add</Text>
@@ -75,6 +140,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         backgroundColor: '#82b7bf',
+        padding: 20,
     },
     name: {
         fontWeight: "bold",
@@ -92,9 +158,9 @@ const styles = StyleSheet.create({
     },
     input: {
         backgroundColor: '#ffffff',
-        color: 'white', // Set text color to white
+        color: 'black',
         borderRadius: 10,
-        width: '80%',
+        width: '100%',
         height: 50,
         paddingHorizontal: 20,
         marginBottom: 20,
@@ -110,16 +176,16 @@ const styles = StyleSheet.create({
         marginBottom: 10,
         alignSelf: 'flex-start',
         justifyContent: 'flex-start',
-        marginLeft: 20
+        marginLeft: 20,
     },
     button: {
-        width: '80%',
+        width: '100%',
         borderRadius: 10,
         height: 50,
         alignItems: 'center',
         justifyContent: 'center',
         marginTop: 10,
-        marginBottom: 10
+        marginBottom: 10,
     },
     buttonText: {
         color: '#ffffff',
@@ -130,17 +196,22 @@ const styles = StyleSheet.create({
         marginTop: 20,
         marginBottom: 10,
     },
-    cameraIcon: {
-        width: 100,  // Adjust width
-        height: 100, // Adjust height
-        borderRadius: 35,
+    imageContainer: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: 100,
+        width: 100,
+        borderWidth: 1,
+        borderColor: '#ccc',
+        marginBottom: 5,
     },
     selectedImage: {
-        width: 100,
         height: 100,
+        width: 100,
         borderRadius: 50,
-        marginTop: 20,
-        marginBottom: 10,
+    },
+    selectImageText: {
+        color: 'black',
     },
 });
 

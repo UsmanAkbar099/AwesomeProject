@@ -1,151 +1,206 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput } from 'react-native';
+import { View, Text, TextInput, Button, StyleSheet, Alert } from 'react-native';
 import RNPickerSelect from 'react-native-picker-select';
+import { BASE_URL } from './config';
 
-const ADDPoliciess = () => {
-    const [cgpa, setCGPA] = useState('');
-    const [PolicyDecription, setPolicyDecription] = useState('');
-    const [DeadLine, setDeadLine] = useState('');
-    const [selectedOption, setSelectedOption] = useState(null);
+const AddPolicyScreen = ({ navigation }) => {
+  const [description, setDescription] = useState('');
+  const [policy, setPolicy] = useState('');
+  const [strength, setStrength] = useState('');
+  const [policyFor, setPolicyFor] = useState('need_base');
+  const [val1, setVal1] = useState('');
+  const [val2, setVal2] = useState('');
+  const [selectedOption, setSelectedOption] = useState('');
 
-    const handleAdd = () => {
-        // Add faculty member logic goes here
-        console.log('Add ADDPolicies');
-        console.log('Selected option:', selectedOption);
+  const handleSubmit = async () => {
+    if (!description) {
+      Alert.alert('Error', 'Please enter a description');
+      return;
+    }
+  
+    if (policyFor === 'NeedBase') {
+      setPolicy('CGPA'); // Set policy to CGPA
+      setStrength(1); // Set strength to 1
+    } else if (!policyFor || !val1 || (policyFor === 'MeritBase' && !selectedOption) || (policyFor === 'MeritBase' && selectedOption === 'Strength' && !val2)) {
+      Alert.alert('Error', 'Please fill in all fields');
+      return;
+    }
+  
+    let storedVal1, storedVal2;
+  
+    if (policyFor === 'NeedBase') {
+      storedVal1 = 3.5; // Set default value for val1
+      storedVal2 = ''; // No need for val2
+      setPolicy('CGPA'); // Set policy to CGPA
+      setStrength(1); // Set strength to 1
+    } else {
+      if (policyFor === 'MeritBase' && selectedOption === 'CGPA') {
+        storedVal1 = val1;
+        setPolicy('CGPA'); // Set policy to CGPA
+        setStrength(1); // Set strength to 1
+      } else if (policyFor === 'MeritBase' && selectedOption === 'Strength') {
+        storedVal1 = val1;
+        storedVal2 = val2;
+        setPolicy('Strength'); // Set policy to Strength
+      }
+    }
+    
+  
+    const policyData = {
+      description,
+      policyFor,
+      val1: storedVal1,
+      val2: storedVal2,
+      policy,
+      strength,
     };
-
-    const handleCancel = () => {
-        // Cancel logic goes here
-        console.log('Cancel');
-    };
-
-    return (
-        <View style={styles.container}>
-            <Text style={styles.name}>ADD Policies</Text>
-            <View style={styles.horizontalLine} />
-            <Text style={styles.inputs}>Select Option</Text>
-            <RNPickerSelect
-                style={{
-                    inputIOS: styles.input,
-                    inputAndroid: styles.input,
-                    viewContainer: styles.pickerContainer,
-                    placeholder: styles.placeholder,
-                }}
-                onValueChange={(value) => setSelectedOption(value)}
-                items={[
-                    { label: 'Merit Base', value: 'merit' },
-                    { label: 'Need Base', value: 'need' },
-                ]}
-                value={selectedOption}
-                placeholder={{
-                    label: 'Select Policies For.....',
-                    value: null,
-                }}
-                placeholderTextColor="black"
+  
+    try {
+      const response = await fetch(`${BASE_URL}/FinancialAidAllocation/api/Admin/AddPolicies?description=${description}&val1=${val1}&val2=${val2}&policyFor=${policyFor}&policy=${policy}&strength=${strength}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(policyData),
+      });
+  
+      
+        Alert.alert('Success', 'Policy added successfully!');
+      
+    } catch (error) {
+      console.error('Error adding policy:', error);
+      Alert.alert('Error', 'Failed to add policy.');
+    }
+  };
+  return (
+    <View style={styles.container}>
+      <Text style={styles.label}>Policy For</Text>
+      <RNPickerSelect
+        onValueChange={(value) => setPolicyFor(value)}
+        items={[
+          { label: 'Need Base', value: 'NeedBase' },
+          { label: 'Merit Base', value: 'MeritBase' },
+        ]}
+        value={policyFor}
+        style={pickerSelectStyles}
+      />
+      {policyFor === 'MeritBase' && (
+        <View style={styles.radioButtonContainer}>
+          <View style={styles.radioButton}>
+            <Button
+              title="CGPA"
+              onPress={() => setSelectedOption('CGPA')}
+              color={selectedOption === 'CGPA' ? 'red' : 'black'}
             />
-            <Text style={styles.inputs}>Minimum CGPA</Text>
-            <TextInput
-                style={styles.input}
-                placeholder="CGPA"
-                placeholderTextColor="#333333"
-                onChangeText={text => setCGPA(text)}
-                value={cgpa}
+          </View>
+          <View style={styles.radioButton}>
+            <Button
+              title="Strength"
+              onPress={() => setSelectedOption('Strength')}
+              color={selectedOption === 'Strength' ? 'red' : 'black'}
             />
-            <Text style={styles.inputs}>Policy Description</Text>
-            <TextInput
-                style={styles.input}
-                placeholder="Policy Description"
-                placeholderTextColor="#333333"
-                onChangeText={text => setPolicyDecription(text)}
-                value={PolicyDecription}
-            />
-            <Text style={styles.inputs}>Dead Line</Text>
-            <TextInput
-                style={styles.input}
-                placeholder="Dead Line"
-                placeholderTextColor="#333333"
-                onChangeText={text => setDeadLine(text)}
-                value={DeadLine}
-            />
-
-            <TouchableOpacity style={[styles.button, { backgroundColor: 'green' }]} onPress={handleAdd}>
-                <Text style={styles.buttonText}>Add</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={[styles.button, { backgroundColor: 'red' }]} onPress={handleCancel}>
-                <Text style={styles.buttonText}>Cancel</Text>
-            </TouchableOpacity>
+          </View>
         </View>
-    );
+      )}
+
+      <Text style={styles.label}>{policyFor === 'NeedBase' ? 'Min CGPA Required' : selectedOption === 'CGPA' ? 'Min CGPA' : 'Min Strength'}</Text>
+      <TextInput
+        style={styles.input}
+        value={val1}
+        onChangeText={setVal1}
+        placeholder={policyFor === 'NeedBase' ? 'Enter min CGPA required' : 'Enter value'}
+        keyboardType="numeric"
+      />
+
+      {policyFor === 'MeritBase' && selectedOption === 'Strength' && (
+        <>
+          <Text style={styles.label}>Max Strength</Text>
+          <TextInput
+            style={styles.input}
+            value={val2}
+            onChangeText={setVal2}
+            placeholder="Enter max strength"
+            keyboardType="numeric"
+          />
+          <Text style={styles.label}>Top Strength</Text>
+          <TextInput
+            style={styles.input}
+            value={strength}
+            onChangeText={setStrength}
+            placeholder="Enter top strength"
+            keyboardType="numeric"
+          />
+        </>
+      )}
+
+      <Text style={styles.label}>Description</Text>
+      <TextInput
+        style={styles.input}
+        value={description}
+        onChangeText={setDescription}
+        placeholder="Enter description"
+        multiline
+      />
+
+      <Button title=" Double Click for ADD" onPress={handleSubmit} />
+    </View>
+  );
 };
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: '#82b7bf',
-    },
-    name: {
-        fontWeight: 'bold',
-        textTransform: 'uppercase',
-        paddingVertical: 1,
-        color: 'red',
-        fontSize: 24,
-        marginTop: 19,
-    },
-    horizontalLine: {
-        backgroundColor: 'black',
-        height: 2,
-        width: '100%',
-        marginTop: 10,
-    },
-    input: {
-        backgroundColor: '#ffffff',
-        color: 'black', // Set text color to black
-        borderRadius: 10,
-        width: '80%',
-        height: 50,
-        paddingHorizontal: 20,
-        marginBottom: 20,
-    },
-    inputs: {
-        fontWeight: 'bold',
-        textTransform: 'uppercase',
-        paddingVertical: 1,
-        color: 'black',
-        fontSize: 18,
-        marginTop: 0,
-        paddingHorizontal: 10,
-        marginBottom: 10,
-        alignSelf: 'flex-start',
-        justifyContent: 'flex-start',
-        marginLeft: 20,
-    },
-    button: {
-        width: '80%',
-        borderRadius: 10,
-        height: 50,
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginTop: 10,
-        marginBottom: 10,
-    },
-    buttonText: {
-        color: '#ffffff',
-        fontSize: 18,
-        fontWeight: 'bold',
-    },
-    pickerContainer: {
-        marginTop: 10,
-        marginBottom: 10,
-        alignItems: 'center',
-        justifyContent: 'center',
-        
-    },
-   
-        
-    
+  container: {
+    flex: 1,
+    padding: 16,
+    backgroundColor: '#82b7bf',
+  },
+  label: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 8,
+    color: 'red',
+  },
+  input: {
+    height: 40,
+    borderColor: 'gray',
+    borderWidth: 1,
+    marginBottom: 12,
+    paddingHorizontal: 10,
+    borderRadius: 4,
+  },
+  radioButtonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: 12,
+  },
+  radioButton: {
+    flex: 1,
+    marginHorizontal: 4,
+    borderRadius: 20,
+    overflow: 'hidden',
+  },
 });
 
-export default ADDPoliciess;
+const pickerSelectStyles = StyleSheet.create({
+  inputIOS: {
+    fontSize: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 10,
+    borderWidth: 1,
+    borderColor: 'gray',
+    borderRadius: 4,
+    color: 'black',
+    marginBottom: 12
+  },
+  inputAndroid: {
+    fontSize: 16,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderWidth: 0.5,
+    borderColor: 'gray',
+    borderRadius: 8,
+    color: 'black',
+    marginBottom: 12,
+  },
+});
+
+export default AddPolicyScreen;

@@ -32,8 +32,14 @@ import ADDPOLICIESS from './ADDPOLICIESS'
 import GraderInfo from './GraderInfo';
 import AddBudgetScreen from './AddBudgetScreen';
 import StudentData from './StudentData';
+import AddUsers from './AddUsers';
+import UpdatedPassword from'./UpdatePassword';
+import UpdateStudent from'./UpdateStudent';
+import ViewApplication from'./VeiwApplication';
+import CommitteeMemberDashboard from './CommitteeDashBoard';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BASE_URL } from './config';
+ 
 
 const Stack = createNativeStackNavigator();
 const Drawer = createDrawerNavigator();
@@ -53,7 +59,7 @@ const CustomDrawerHeader = () => {
       if (storedProfileId !== null) {
         setProfileId(storedProfileId);
         fetchStudentInfo(storedProfileId);
-      } else {
+       } else {
         console.log('Profile ID not found in AsyncStorage');
       }
     } catch (error) {
@@ -180,7 +186,7 @@ const CustomDrawerHeader1 = () => {
       <View style={{ marginLeft: 10, flexDirection: 'column' }}>
       {adminInfo && (
           <>
-        <Title style={styles.title}>{adminInfo.name}</Title>
+        <Title style={styles.title}>{adminInfo.Name}</Title>
         <Text style={styles.caption}>ADMIN </Text>
         </>
         )}
@@ -191,6 +197,86 @@ const CustomDrawerHeader1 = () => {
     </View>
   );
 };
+const CustomDrawerHeader2 = () => {
+  const [profileId , setProfileId] = useState(null);
+  const [committeeInfo, setCommitteeInfo] = useState(null);
+  useEffect(() => {
+    // Fetch profileId from AsyncStorage or wherever it's stored
+    getStoredProfileId();
+  }, []);
+
+  const getStoredProfileId = async () => {
+    try {
+      const storedProfileId = await AsyncStorage.getItem('profileId');
+      if (storedProfileId !== null) {
+        setProfileId(storedProfileId);
+        fetchCommitteeInfo(storedProfileId);
+      } else {
+        console.log('Profile ID not found in AsyncStorage');
+      }
+    } catch (error) {
+      console.error('Error retrieving profile ID from AsyncStorage:', error);
+    }
+  };
+  
+  const fetchCommitteeInfo = (profileId) => {
+    fetch(`${BASE_URL}/FinancialAidAllocation/api/Committee/CommitteeMembers?id=${profileId}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error(`Network response was not ok: ${response.status} - ${response.statusText}`);
+      }
+      return response.json();
+    })
+    .then(async data => {
+      setCommitteeInfo(data); // Update state with fetched student info
+      console.log('Fetched Committee info:', data); // Log the fetched data
+  
+      // Store student info in AsyncStorage
+      try {
+        await AsyncStorage.setItem('Committee', JSON.stringify(data));
+        console.log('Committee info stored in AsyncStorage');
+  
+        // Fetch application status based on student_id
+    
+    if (data && data.committeeId) {
+        //  fetchApplicationStatus(data.adminId);
+        }
+      } catch (error) {
+        console.error('Error storing Admin info in AsyncStorage:', error);
+      }
+    })
+    .catch(error => {
+      console.error('Error fetching committee information:', error);
+      Alert.alert('Error', 'Failed to fetch committee information. Please try again later.');
+    });
+  };
+  
+  return (
+    <View style={{ flexDirection: 'row', marginTop: 15, marginLeft: 10 }}>
+      <Avatar.Image
+        source={require('./logo.png')} // Replace 'your-profile-image-path.jpg' with your actual image path
+        size={50}
+      />
+      <View style={{ marginLeft: 10, flexDirection: 'column' }}>
+      {committeeInfo && (
+          <>
+        <Title style={styles.title}>{committeeInfo.name}</Title>
+        <Text style={styles.caption}>Committee Member </Text>
+        </>
+        )}
+
+
+        
+      </View>
+    </View>
+  );
+};
+
 
 const App = () => {
   return (
@@ -201,6 +287,27 @@ const App = () => {
           {() => (
             <Drawer.Navigator drawerContent={CustomDrawerContent}>
               <Drawer.Screen name="StudentDashBoard" component={StudentDashboard}
+              options={{
+                headerShown: true, // Ensure header is shown if needed
+                headerStyle: { backgroundColor: 'lightblue' }, // Change header background color
+                drawerStyle: { backgroundColor: 'lightblue' }, // Change drawer background color
+                headerTitleAlign: 'center',
+                headerRight: () => (
+                  <Image
+                    source={require('./logo.png')} // Replace 'path/to/your/image.png' with the correct path
+                    style={{ width: 40, height: 40, marginRight: 10 }} // Adjust the width, height, and margin as needed
+                  />
+                ),
+                
+              }} />
+              
+            </Drawer.Navigator>
+          )}
+        </Stack.Screen>
+        <Stack.Screen name="CommitteeDashBoard" options={{ headerShown: false }}>
+          {() => (
+            <Drawer.Navigator drawerContent={CustomDrawerContent2}>
+              <Drawer.Screen name="Committee Member" component={CommitteeMemberDashboard}
               options={{
                 headerShown: true, // Ensure header is shown if needed
                 headerStyle: { backgroundColor: 'lightblue' }, // Change header background color
@@ -253,6 +360,10 @@ const App = () => {
         <Stack.Screen name="CommitteeMember" component={CommitteeMember} />
         <Stack.Screen name="AssignGrader" component={AssignGrader} />
         <Stack.Screen name="BudgetHistory" component={BudgetHistory} />
+        <Stack.Screen name="AddUsers" component={AddUsers} />
+        <Stack.Screen name="ViewApplication" component={ViewApplication} />
+        <Stack.Screen name="UpdateStudent" component={UpdateStudent} />
+        <Stack.Screen name="UpdatedPassword" component={UpdatedPassword} />
         <Stack.Screen name="AddBudgetScreen" component={AddBudgetScreen} />
         <Stack.Screen name="AddStudent" component={AddStudent} />
         <Stack.Screen name="Policies" component={AddPolicies} />
@@ -262,6 +373,7 @@ const App = () => {
         <Stack.Screen name="AddCommitteeMember" component={AddCommitteeMember} />
         <Stack.Screen name="GraderInfo" component={GraderInfo} />
         <Stack.Screen name="StudentData" component={StudentData} />
+        
       </Stack.Navigator>
     </NavigationContainer>
   );
@@ -351,6 +463,12 @@ const CustomDrawerContent1 = (props) => {
     props.navigation.navigate('StudentData');
 
 };
+
+const handleUsers = () => {
+           
+  props.navigation.navigate('AddUsers');
+
+};
   const handlePolicies = () => {
            
              props.navigation.navigate('Policies');
@@ -364,7 +482,7 @@ const CustomDrawerContent1 = (props) => {
   };
   const handleCommittee = () => {
            
-             props.navigation.navigate('AddCommitteeMember');
+             props.navigation.navigate('CommitteeMember');
         
   };
 
@@ -423,6 +541,17 @@ const CustomDrawerContent1 = (props) => {
         fontSize:20
       }}
     />
+    <DrawerItem
+  label="ADD USERS"
+  onPress={handleUsers}
+  labelStyle={{
+    fontWeight: 'bold', // Set font weight to bold
+    textAlign: 'center', // Align text center
+    color:'black',
+    fontSize:20
+  }}
+/>
+
       <DrawerItem
         label="LogOut"
         onPress={handleLogout}
@@ -436,8 +565,89 @@ const CustomDrawerContent1 = (props) => {
     </DrawerContentScrollView>
   );
 };
+const CustomDrawerContent2 = (props) => {
+  const handleLogout2 = () => {
+    Alert.alert(
+      'Logout',
+      'Are you sure you want to log out?',
+      [
+        {
+          text: 'No',
+          style: 'cancel',
+        },
+        {
+          text: 'Yes',
+          onPress: () => {
+            
+             props.navigation.navigate('Login');
+            // Or close the application
+            // RNExitApp.exitApp();
+           
+          },
+        },
+      ],
+      { cancelable: false }
+    );
+  };
+  const handleBudgets = async () => {
+    try {
+      const totalAmount = await getTotalAmount(); // Fetch total amount from API
+      if (totalAmount !== null) {
+        alert(`Total amount remaining: ${totalAmount}`); // Show alert with total amount
+      } else {
+        alert('Failed to fetch total amount.');
+      }
+    } catch (error) {
+      console.error('Error fetching total amount:', error);
+      alert('Failed to fetch total amount.');
+    }
+  };
+  const getTotalAmount = async () => {
+    try {
+      const response = await fetch(`${BASE_URL}/FinancialAidAllocation/api/Committee/GetBalance`);
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Response data:', data); // Log the response data
+        return data; // Return the response data directly
+      } else {
+        console.error('Failed to fetch total amount:', response.statusText);
+        return null;
+      }
+    } catch (error) {
+      console.error('Error fetching total amount:', error);
+      return null;
+    }
+  };
 
+return (
+  <DrawerContentScrollView {...props}>
+    <CustomDrawerHeader2 />
+    <DrawerItemList {...props} />
+    <DrawerItem
+      label=" Balance"
+      onPress={handleBudgets}
+      labelStyle={{
+        fontWeight: 'bold', // Set font weight to bold
+        textAlign: 'center', // Align text center
+        color:'black',
+        fontSize:20
+      }}
+    />
+    <DrawerItem
+      label=" LogOUt"
+      onPress={handleLogout2}
+      labelStyle={{
+        fontWeight: 'bold', // Set font weight to bold
+        textAlign: 'center', // Align text center
+        color:'black',
+        fontSize:20
+      }}
+    />
 
+</DrawerContentScrollView>
+  );
+
+};
 const styles = StyleSheet.create({
   title: {
     fontSize: 26,

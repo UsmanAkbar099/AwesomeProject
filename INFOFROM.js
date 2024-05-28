@@ -1,4 +1,4 @@
-import React, { useState,useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Image } from 'react-native';
 import { RadioButton } from 'react-native-paper';
 import DocumentPicker from 'react-native-document-picker';
@@ -19,6 +19,8 @@ const AfterLogin = (props) => {
     const [job, setJobTitle] = useState('');
     const [contactno, setContactno] = useState('');
     const [salary, setSalary] = useState('');
+    const [studentid, setStudentid] = useState('');
+
     const [uploadSalarySlip, setUploadSalarySlip] = useState(null);
     const [uploadDeathCertificate, setUploadDeathCertificate] = useState(null);
 
@@ -32,7 +34,7 @@ const AfterLogin = (props) => {
 
     const clearFrom = () => {
         // Handle form submission
-        
+
         setFather('');
         setGcontact('');
         setGname('');
@@ -42,12 +44,13 @@ const AfterLogin = (props) => {
         setSalary('');
         setJobTitle('');
         setContactno('');
+        setStudentid('');
     };
 
     const handleUploadSalary = async () => {
         try {
             const res = await DocumentPicker.pick({
-                type: [DocumentPicker.types.pdf, DocumentPicker.types.doc, DocumentPicker.types.docx,DocumentPicker.types.images],
+                type: [DocumentPicker.types.pdf, DocumentPicker.types.doc, DocumentPicker.types.docx, DocumentPicker.types.images],
             });
             console.log('File picked:', res); // Log the picked file object
             // Set the uploaded file to state
@@ -64,7 +67,7 @@ const AfterLogin = (props) => {
     const handleDeathCertificate = async () => {
         try {
             const res = await DocumentPicker.pick({
-                type: [DocumentPicker.types.pdf, DocumentPicker.types.doc, DocumentPicker.types.docx,DocumentPicker.types.images],
+                type: [DocumentPicker.types.pdf, DocumentPicker.types.doc, DocumentPicker.types.docx, DocumentPicker.types.images],
             });
             console.log('File picked:', res); // Log the picked file object
             // Set the uploaded file to state
@@ -86,12 +89,12 @@ const AfterLogin = (props) => {
             alert('Please enter your name.');
             return;
         }
-    
+
         if (arid.trim() === '') {
             alert('Please enter your Arid number.');
             return;
         }
-    
+
         if (semester.trim() === '') {
             alert('Please enter your semester.');
             return;
@@ -100,23 +103,23 @@ const AfterLogin = (props) => {
             alert('Please enter your cgpa.');
             return;
         }
-    
+
         if (!father) {
             alert('Please select father status.');
             return;
         }
-    
+
         if (father === 'Deceased') {
             if (gname.trim() === '') {
                 alert('Please enter guardian name.');
                 return;
             }
-    
+
             if (gcontact.trim() === '') {
                 alert('Please enter guardian contact.');
                 return;
             }
-    
+
             if (grelation.trim() === '') {
                 alert('Please enter guardian relation.');
                 return;
@@ -130,23 +133,23 @@ const AfterLogin = (props) => {
                 alert('Please enter father name.');
                 return;
             }
-    
+
             if (job.trim() === '') {
                 alert('Please enter father\'s job title.');
                 return;
             }
-    
+
             if (contactno.trim() === '') {
                 alert('Please enter contact number.');
                 return;
             }
-    
+
             if (salary.trim() === '') {
                 alert('Please enter salary.');
                 return;
             }
         }
-    
+
         // If all validations pass, store data in AsyncStorage
         const formData = {
             name,
@@ -161,14 +164,15 @@ const AfterLogin = (props) => {
             gname,
             gcontact,
             grelation,
+            studentid,
             uploadSalarySlip,
             uploadDeathCertificate,
         };
-    
+
         try {
             await AsyncStorage.setItem('formData', JSON.stringify(formData));
             console.log('Form data stored in AsyncStorage');
-            props.navigation.navigate("PersonalDetails");
+            props.navigation.navigate("PersonalDetails",{data:formData});
         } catch (error) {
             console.error('Error storing form data in AsyncStorage:', error);
         }
@@ -178,67 +182,68 @@ const AfterLogin = (props) => {
         clearFrom();
         console.log('Form cleared');
     };
-    const [profileId , setProfileId] = useState(null);
-  const [studentInfo, setStudentInfo] = useState(null);
-  useEffect(() => {
-    // Fetch profileId from AsyncStorage or wherever it's stored
-    getStoredProfileId();
-  }, []);
+    const [profileId, setProfileId] = useState(null);
+    const [studentInfo, setStudentInfo] = useState(null);
+    useEffect(() => {
+        // Fetch profileId from AsyncStorage or wherever it's stored
+        getStoredProfileId();
+    }, []);
 
-  const getStoredProfileId = async () => {
-    try {
-      const storedProfileId = await AsyncStorage.getItem('profileId');
-      if (storedProfileId !== null) {
-        setProfileId(storedProfileId);
-        fetchStudentInfo(storedProfileId);
-      } else {
-        console.log('Profile ID not found in AsyncStorage');
-      }
-    } catch (error) {
-      console.error('Error retrieving profile ID from AsyncStorage:', error);
-    }
-  };
-  
-  const fetchStudentInfo = (profileId) => {
-    fetch(`${BASE_URL}/FinancialAidAllocation/api/Student/getStudentInfo?id=${profileId}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    })
-    .then(response => {
-      if (!response.ok) {
-        throw new Error(`Network response was not ok: ${response.status} - ${response.statusText}`);
-      }
-      return response.json();
-    })
-    .then(async data => {
-      setStudentInfo(data); // Update state with fetched student info
-      console.log('Fetched student info:', data); // Log the fetched data
-      setName(data.name);
-      setArid(data.arid_no);
-      setSemester(data.semester.toString()); 
-      setCgpa(data.cgpa.toString());
-      setFathername(data.father_name);
-
-      // Store student info in AsyncStorage
-      try {
-        await AsyncStorage.setItem('studentInfo', JSON.stringify(data));
-        console.log('Student info stored in AsyncStorage');
-  
-        // Fetch application status based on student_id
-        if (data && data.student_id) {
-         // fetchApplicationStatus(data.student_id);
+    const getStoredProfileId = async () => {
+        try {
+            const storedProfileId = await AsyncStorage.getItem('profileId');
+            if (storedProfileId !== null) {
+                setProfileId(storedProfileId);
+                fetchStudentInfo(storedProfileId);
+            } else {
+                console.log('Profile ID not found in AsyncStorage');
+            }
+        } catch (error) {
+            console.error('Error retrieving profile ID from AsyncStorage:', error);
         }
-      } catch (error) {
-        console.error('Error storing student info in AsyncStorage:', error);
-      }
-    })
-    .catch(error => {
-      console.error('Error fetching student information:', error);
-      Alert.alert('Error', 'Failed to fetch student information. Please try again later.');
-    });
-  };
+    };
+
+    const fetchStudentInfo = (profileId) => {
+        fetch(`${BASE_URL}/FinancialAidAllocation/api/Student/getStudentInfo?id=${profileId}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Network response was not ok: ${response.status} - ${response.statusText}`);
+                }
+                return response.json();
+            })
+            .then(async data => {
+                setStudentInfo(data); // Update state with fetched student info
+                console.log('Fetched student info:', data); // Log the fetched data
+                setName(data.name);
+                setStudentid(data.student_id);
+                setArid(data.arid_no);
+                setSemester(data.semester.toString());
+                setCgpa(data.cgpa.toString());
+                setFathername(data.father_name);
+
+                // Store student info in AsyncStorage
+                try {
+                    await AsyncStorage.setItem('studentInfo', JSON.stringify(data));
+                    console.log('Student info stored in AsyncStorage');
+
+                    // Fetch application status based on student_id
+                    if (data && data.student_id) {
+                        // fetchApplicationStatus(data.student_id);
+                    }
+                } catch (error) {
+                    console.error('Error storing student info in AsyncStorage:', error);
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching student information:', error);
+                Alert.alert('Error', 'Failed to fetch student information. Please try again later.');
+            });
+    };
 
     return (
         <View style={styles.container}>
@@ -322,7 +327,7 @@ const AfterLogin = (props) => {
                             onChangeText={setGrelation}
                             value={grelation}
                         />
-                         <TouchableOpacity style={styles.uploadButton} onPress={handleDeathCertificate}>
+                        <TouchableOpacity style={styles.uploadButton} onPress={handleDeathCertificate}>
                             <Text style={styles.inputs}>{uploadDeathCertificate ? uploadDeathCertificate[0].name : 'Upload Death Certificate'}</Text>
                         </TouchableOpacity>
                     </View>
@@ -389,7 +394,7 @@ const styles = {
     },
     formBox: {
         width: '80%',
-        
+
         backgroundColor: '#82b7bf',
         padding: 20,
         borderRadius: 30
@@ -405,11 +410,11 @@ const styles = {
     label: {
         fontSize: 16,
         marginBottom: 5,
-        color:'red'
+        color: 'red'
     },
     input: {
         height: 36,
-        borderColor:'black',
+        borderColor: 'black',
         borderWidth: 2,
         borderRadius: 10,
         marginBottom: 3,

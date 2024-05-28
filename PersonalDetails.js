@@ -1,55 +1,43 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Alert } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, TextInput, TouchableOpacity, Alert, Platform } from 'react-native';
 import { RadioButton } from 'react-native-paper';
 import DocumentPicker from 'react-native-document-picker';
 import { BASE_URL } from './config';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const PersonalDetails = () => {
+const PersonalDetails = ({ route, navigation }) => {
     const [house, setHouse] = useState('');
-    const [hagree, setHagree] = useState(null);
-    const [ragree, setRagree] = useState(null); // State for rental agreement
+    const [agreement, setAgreement] = useState(null); // Single state for house/rental agreement
     const [reason, setReason] = useState('');
     const [amount, setAmount] = useState('');
+    const [data, setData] = useState({});
 
+    useEffect(() => {
+        const obj = route.params;
+        setData(obj.data); // Directly use obj.data
+        console.log('Received student data:', obj.data); // Log the student data to console
+    }, []);
+    
     const House = (value) => {
         setHouse(value);
+        setAgreement(null); // Reset agreement when house type changes
     };
 
     const clearForm = () => {
         setHouse('');
-        setHagree(null);
-        setRagree(null); // Reset rental agreement
+        setAgreement(null);
         setReason('');
         setAmount('');
     };
 
-    const handleHouseAgree = async () => {
+    const handleAgreement = async () => {
         try {
             const res = await DocumentPicker.pick({
                 type: [DocumentPicker.types.pdf, DocumentPicker.types.doc, DocumentPicker.types.docx, DocumentPicker.types.images],
             });
-            console.log('File picked:', res);
-            setHagree(res);
+            setAgreement(res);
         } catch (err) {
-            if (DocumentPicker.isCancel(err)) {
-                // Handle cancelled picker
-            } else {
-                console.log(err);
-            }
-        }
-    };
-
-    const handleRentalAgree = async () => {
-        try {
-            const res = await DocumentPicker.pick({
-                type: [DocumentPicker.types.pdf, DocumentPicker.types.doc, DocumentPicker.types.docx, DocumentPicker.types.images],
-            });
-            console.log('File picked:', res);
-            setRagree(res);
-        } catch (err) {
-            if (DocumentPicker.isCancel(err)) {
-                // Handle cancelled picker
-            } else {
+            if (!DocumentPicker.isCancel(err)) {
                 console.log(err);
             }
         }
@@ -57,21 +45,15 @@ const PersonalDetails = () => {
 
     const handleCancel = () => {
         clearForm();
-        console.log('Form cleared');
     };
 
     const handleSubmit = async () => {
-        // Perform validation checks
         if (house === '') {
             Alert.alert('Error', 'Please select house type');
             return;
         }
-        if (house === 'rent' && !ragree) {
-            Alert.alert('Error', 'Please upload rental agreement');
-            return;
-        }
-        if (!hagree) {
-            Alert.alert('Error', 'Please upload house agreement');
+        if (!agreement) {
+            Alert.alert('Error', `Please upload ${house === 'own' ? 'house' : 'rental'} agreement`);
             return;
         }
         if (reason.trim() === '') {
@@ -82,19 +64,41 @@ const PersonalDetails = () => {
             Alert.alert('Error', 'Please enter required amount');
             return;
         }
-    
-        // Prepare form data for submission
+
         const formData = new FormData();
+        formData.append('status', data.father);
+        formData.append('occupation', data.job);
+        formData.append('contactNo', data.contactno);
+        formData.append('salary', data.salary);
+        formData.append('gName', data.gname);
+        formData.append('gContact', data.gcontact);
+        formData.append('gRelation', data.grelation);
         formData.append('house', house);
-        formData.append('house_agreement', hagree[0]);
-        if (house === 'rent') {
-            formData.append('rental_agreement', ragree[0]);
-        }
         formData.append('reason', reason);
         formData.append('amount', amount);
-    
+        formData.append('length', 1);
+        formData.append('isPicked', true);
+        formData.append('studentId', data.studentid);
+
+        agreement.forEach((file, index) => {
+            const fileToUpload = {
+                uri: Platform.OS === 'ios' ? file.uri.replace('file://', '') : file.uri,
+                type: file.type,
+                name: file.name,
+            };
+            formData.append(`agreement${index}`, fileToUpload);
+        });
+
+        data.uploadSalarySlip.forEach((file, index) => {
+            const fileToUpload = {
+                uri: Platform.OS === 'ios' ? file.uri.replace('file://', '') : file.uri,
+                type: file.type,
+                name: file.name,
+            };
+            formData.append(`docs`, fileToUpload);
+        });
+
         try {
-            // API call to submit the form data
             const response = await fetch(`${BASE_URL}/FinancialAidAllocation/api/Student/sendApplication`, {
                 method: 'POST',
                 headers: {
@@ -102,7 +106,7 @@ const PersonalDetails = () => {
                 },
                 body: formData,
             });
-    
+
             if (response.ok) {
                 const data = await response.json();
                 console.log('Form submitted successfully:', data);
@@ -123,8 +127,6 @@ const PersonalDetails = () => {
             }
         }
     };
-    
-    
 
     return (
         <View style={styles.container}>
@@ -150,14 +152,8 @@ const PersonalDetails = () => {
                     </View>
                 </View>
 
-                {house === 'rent' && (
-                    <TouchableOpacity style={styles.uploadButton} onPress={handleRentalAgree}>
-                        <Text style={styles.inputs}>{ragree ? ragree[0].name : 'Rental Agreement'}</Text>
-                    </TouchableOpacity>
-                )}
-
-                <TouchableOpacity style={styles.uploadButton} onPress={handleHouseAgree}>
-                    <Text style={styles.inputs}>{hagree ? hagree[0].name : 'House Agreement'}</Text>
+                <TouchableOpacity style={styles.uploadButton} onPress={handleAgreement}>
+                    <Text style={styles.inputs}>{agreement ? agreement[0].name : `${house === 'own' ? 'House' : 'Rental'} Agreement`}</Text>
                 </TouchableOpacity>
 
                 <TextInput
