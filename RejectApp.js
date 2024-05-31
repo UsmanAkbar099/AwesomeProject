@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { TextInput, View, Text, StyleSheet, FlatList, Image } from 'react-native';
+import { TextInput, View, Text, StyleSheet, FlatList, Image, RefreshControl } from 'react-native';
 import { BASE_URL } from './config';
 
 const RejectedApplication = (props) => {
@@ -8,6 +8,7 @@ const RejectedApplication = (props) => {
   const [filteredFacultyMembers, setFilteredFacultyMembers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [refreshing, setRefreshing] = useState(false); // State to track refreshing
 
   useEffect(() => {
     fetchData();
@@ -18,7 +19,7 @@ const RejectedApplication = (props) => {
       setFilteredFacultyMembers(facultyMembers);
     } else {
       const filteredData = facultyMembers.filter((member) =>
-        member.re.name.toLowerCase().includes(searchQuery.toLowerCase())
+        member.name.toLowerCase().includes(searchQuery.toLowerCase())
       );
       setFilteredFacultyMembers(filteredData);
     }
@@ -26,27 +27,31 @@ const RejectedApplication = (props) => {
 
   const fetchData = async () => {
     try {
+      setRefreshing(true); // Set refreshing to true when fetching data
       const response = await fetch(`${BASE_URL}/FinancialAidAllocation/api/Admin/RejectedApplication`);
       const data = await response.json();
       console.log('Fetched data:', data);
       setFacultyMembers(data);
+      setFilteredFacultyMembers(data); // Ensure filtered data is also updated
       setIsLoading(false);
     } catch (error) {
       console.error('Error fetching data: ', error);
       setError(error);
       setIsLoading(false);
+    } finally {
+      setRefreshing(false); // Set refreshing back to false after fetching data
     }
   };
 
   const renderFacultyMember = ({ item }) => (
     <View style={styles.facultyMemberContainer}>
       <View style={styles.facultyMemberInfo}>
-        <Text style={styles.facultyMemberName}>{item.re.name}</Text>
-        <Text style={styles.aridNoText}>{item.re.arid_no}</Text>
+        <Text style={styles.facultyMemberName}>{item.name}</Text>
+        <Text style={styles.aridNoText}>{item.arid_no}</Text>
       </View>
-      {item.re.profile_image ? (
+      {item.profile_image ? (
         <Image
-          source={{ uri: `${BASE_URL}/FinancialAidAllocation/Content/ProfileImages/${item.re.profile_image}` }}
+          source={{ uri: `${BASE_URL}/FinancialAidAllocation/Content/ProfileImages/${item.profile_image}` }}
           style={styles.facultyMemberImage}
         />
       ) : (
@@ -101,11 +106,16 @@ const RejectedApplication = (props) => {
         data={filteredFacultyMembers}
         renderItem={renderFacultyMember}
         keyExtractor={(item, index) => (item.id ? item.id.toString() : index.toString())}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={fetchData} // Call fetchData on pull-to-refresh
+          />
+        }
       />
     </View>
   );
 };
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,

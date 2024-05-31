@@ -5,7 +5,7 @@ import DocumentPicker from 'react-native-document-picker';
 import { BASE_URL } from './config';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const PersonalDetails = ({ route, navigation }) => {
+const PersonalDetails = ({ props,route, navigation }) => {
     const [house, setHouse] = useState('');
     const [agreement, setAgreement] = useState(null); // Single state for house/rental agreement
     const [reason, setReason] = useState('');
@@ -121,7 +121,9 @@ const PersonalDetails = ({ route, navigation }) => {
                 const data = await response.json();
                 console.log('Form submitted successfully:', data);
                 Alert.alert('Success', 'Form submitted successfully');
+                //props.navigation.navigate("StudentDashBoard");
                 clearForm();
+                
             } else {
                 const errorData = await response.json();
                 console.error('Form submission failed:', errorData);

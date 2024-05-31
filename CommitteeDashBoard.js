@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TextInput, FlatList, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TextInput, FlatList, TouchableOpacity, RefreshControl } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BASE_URL } from './config'; // Ensure this URL is correct
 
@@ -7,68 +7,84 @@ const CommitteeMemberDashboard = (props) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [MeritBaseShortListing, setMeritBaseShortListing] = useState([]);
   const [filteredMeritBaseShortListing, setFilteredMeritBaseShortListing] = useState([]);
-  const [profileId , setProfileId] = useState(null);
+  const [profileId, setProfileId] = useState(null);
+  const [refreshing, setRefreshing] = useState(false); // State to track refreshing
 
   useEffect(() => {
     getStoredProfileId(); // Fetch profileId from AsyncStorage
   }, []);
 
   useEffect(() => {
-    fetchData(); // Fetch data initially
-  }, [profileId]); // Fetch data whenever profileId changes
+    if (profileId) {
+      fetchData(profileId); // Fetch data initially and whenever profileId changes
+    }
+  }, [profileId]);
 
   useEffect(() => {
     filterData(); // Filter data whenever searchQuery changes
-  }, [searchQuery]);
+  }, [searchQuery, MeritBaseShortListing]);
 
   const getStoredProfileId = async () => {
     try {
       const storedProfileId = await AsyncStorage.getItem('profileId');
       if (storedProfileId !== null) {
         setProfileId(storedProfileId);
-        fetchData(storedProfileId); // Call fetchData with the storedProfileId
       } else {
         console.log('Profile ID not found in AsyncStorage');
       }
+  
+      const storedCommitteeId = await AsyncStorage.getItem('committeeId');
+      if (storedCommitteeId !== null) {
+        console.log('Stored Committee ID:', storedCommitteeId);
+      } else {
+        console.log('Committee ID not found in AsyncStorage');
+      }
     } catch (error) {
-      console.error('Error retrieving profile ID from AsyncStorage:', error);
+      console.error('Error retrieving data from AsyncStorage:', error);
     }
   };
   
   const fetchData = async (profileId) => {
     try {
+      setRefreshing(true); // Set refreshing to true when fetching data
       const response = await fetch(`${BASE_URL}/FinancialAidAllocation/api/Committee/GetApplication?id=${profileId}`);
       if (response.ok) {
         const data = await response.json();
         console.log('Fetched data:', data); // Check the fetched data
-        
+        setMeritBaseShortListing(data);
         setFilteredMeritBaseShortListing(data);
       } else {
         console.error('Failed to fetch data:', response.statusText);
       }
     } catch (error) {
       console.error('Error fetching data:', error);
+    } finally {
+      setRefreshing(false); // Set refreshing back to false after fetching data
     }
   };
-  
 
   const filterData = () => {
     if (searchQuery.trim() === '') {
       setFilteredMeritBaseShortListing(MeritBaseShortListing);
     } else {
       const filtered = MeritBaseShortListing.filter(item =>
-        item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.arid_no.toLowerCase().includes(searchQuery.toLowerCase())
+        (item.name && item.name.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (item.arid_no && item.arid_no.toLowerCase().includes(searchQuery.toLowerCase()))
       );
       setFilteredMeritBaseShortListing(filtered);
     }
   };
 
   const handleApplicationClick = async (item) => {
+    console.log('Application clicked:', item); // Log the data to the console
     try {
       await AsyncStorage.setItem('selectedApplication', JSON.stringify(item));
-     // props.navigation.navigate('ViewApplication', { applicationData: item });
-      console.log('Stored data:', item); // Log the stored data to console
+      if (item.committeeId) {
+        await AsyncStorage.setItem('committeeId', item.committeeId.toString()); // Store committeeId in AsyncStorage if it exists
+        console.log('Committee ID stored in AsyncStorage:', item.committeeId);
+      }
+      
+      props.navigation.navigate('ViewApplicationCommittee', { applicationData: item });
     } catch (error) {
       console.error('Error storing data:', error);
     }
@@ -77,6 +93,7 @@ const CommitteeMemberDashboard = (props) => {
   const renderFacultyMember = ({ item }) => (
     <View style={styles.facultyMemberContainer}>
       <View>
+        {item.session && <Text style={styles.facultyMemberName}>{item.session}</Text>}
         {item.name && <Text style={styles.facultyMemberName}>{item.name}</Text>}
         {item.arid_no && <Text style={styles.aridNoText}>{item.arid_no}</Text>}
         <TouchableOpacity onPress={() => handleApplicationClick(item)}>
@@ -108,16 +125,22 @@ const CommitteeMemberDashboard = (props) => {
           onChangeText={setSearchQuery}
         />
       </View>
-      
-      <FlatList
-        data={filteredMeritBaseShortListing}
-        renderItem={renderFacultyMember}
-        keyExtractor={(item, index) => item.applicationID.toString()} // Assuming applicationID is a unique identifier
-      />
+      <View style={styles.flatListContainer}>
+        <FlatList
+          data={filteredMeritBaseShortListing}
+          renderItem={renderFacultyMember}
+          keyExtractor={(item, index) => item.applicationID.toString()} // Assuming applicationID is a unique identifier
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={() => fetchData(profileId)} // Call fetchData on pull-to-refresh
+            />
+          }
+        />
+      </View>
     </View>
   );
 };
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -180,6 +203,11 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 40,
     color: 'black',
+  },
+  flatListContainer: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
   },
   facultyMemberContainer: {
     flexDirection: 'row',

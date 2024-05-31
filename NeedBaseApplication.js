@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TextInput, FlatList, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TextInput, FlatList, TouchableOpacity, RefreshControl } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BASE_URL } from './config'; // Ensure this URL is correct
 
@@ -7,7 +7,8 @@ const NeedBaseApplication = (props) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [MeritBaseShortListing, setMeritBaseShortListing] = useState([]);
   const [filteredMeritBaseShortListing, setFilteredMeritBaseShortListing] = useState([]);
-  
+  const [refreshing, setRefreshing] = useState(false); // State to track refreshing
+
   useEffect(() => {
     fetchData();
   }, []);
@@ -18,7 +19,8 @@ const NeedBaseApplication = (props) => {
 
   const fetchData = async () => {
     try {
-      const response = await fetch(`${BASE_URL}/FinancialAidAllocation/api/Admin/ApplicationWithSuggestion`);
+      setRefreshing(true); // Set refreshing to true when fetching data
+      const response = await fetch(`${BASE_URL}/FinancialAidAllocation/api/Admin/ApplicationSuggestions`);
       if (response.ok) {
         const data = await response.json();
         console.log('Fetched data:', data); // Check the fetched data
@@ -29,6 +31,8 @@ const NeedBaseApplication = (props) => {
       }
     } catch (error) {
       console.error('Error fetching data:', error);
+    } finally {
+      setRefreshing(false); // Set refreshing back to false after fetching data
     }
   };
 
@@ -37,8 +41,8 @@ const NeedBaseApplication = (props) => {
       setFilteredMeritBaseShortListing(MeritBaseShortListing);
     } else {
       const filtered = MeritBaseShortListing.filter(item =>
-        item.re.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.re.arid_no.toLowerCase().includes(searchQuery.toLowerCase())
+        item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.arid_no.toLowerCase().includes(searchQuery.toLowerCase())
       );
       setFilteredMeritBaseShortListing(filtered);
     }
@@ -47,7 +51,7 @@ const NeedBaseApplication = (props) => {
   const handleApplicationClick = async (item) => {
     try {
       await AsyncStorage.setItem('selectedApplication', JSON.stringify(item));
-      props.navigation.navigate('ViewApplication', { applicationData: item });
+      props.navigation.navigate('ViewAppAdmin', { applicationData: item });
       console.log('Stored data:', item); // Log the stored data to console
     } catch (error) {
       console.error('Error storing data:', error);
@@ -57,8 +61,8 @@ const NeedBaseApplication = (props) => {
   const renderFacultyMember = ({ item }) => (
     <View style={styles.facultyMemberContainer}>
       <View>
-        {item.re.name && <Text style={styles.facultyMemberName}>{item.re.name}</Text>}
-        {item.re.arid_no && <Text style={styles.aridNoText}>{item.re.arid_no}</Text>}
+        {item.name && <Text style={styles.facultyMemberName}>{item.name}</Text>}
+        {item.arid_no && <Text style={styles.aridNoText}>{item.arid_no}</Text>}
         <TouchableOpacity onPress={() => handleApplicationClick(item)}>
           <Text style={styles.Text}>Click Here To See The Application</Text>
         </TouchableOpacity>
@@ -92,7 +96,13 @@ const NeedBaseApplication = (props) => {
       <FlatList
         data={filteredMeritBaseShortListing}
         renderItem={renderFacultyMember}
-        keyExtractor={(item, index) => item.re.applicationID.toString()} // Assuming applicationID is a unique identifier
+        keyExtractor={(item, index) => item.applicationID.toString()} // Assuming applicationID is a unique identifier
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={fetchData} // Call fetchData on pull-to-refresh
+          />
+        }
       />
     </View>
   );

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, SafeAreaView, Text, StyleSheet, TextInput, FlatList, Image, TouchableOpacity, Alert, ActivityIndicator, RefreshControl } from 'react-native';
+import { View, SafeAreaView, Text, StyleSheet, TextInput, FlatList, Image, TouchableOpacity, Alert, ActivityIndicator, RefreshControl, Modal } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BASE_URL } from './config';
 
 const FacultyMember = (props) => {
@@ -8,6 +9,10 @@ const FacultyMember = (props) => {
   const [filteredFacultyMembers, setFilteredFacultyMembers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalData, setModalData] = useState([]);
+  const [modalLoading, setModalLoading] = useState(false);
+  const [noGraderAssigned, setNoGraderAssigned] = useState(false);
 
   const fetchData = async () => {
     try {
@@ -23,6 +28,28 @@ const FacultyMember = (props) => {
       setLoading(false);
     }
   };
+
+  const fetchModalData = async (facultyId) => {
+    try {
+      setModalLoading(true);
+      setNoGraderAssigned(false);
+      const response = await fetch(`${BASE_URL}/FinancialAidAllocation/api/Admin/gradersInformation?id=${facultyId}`);
+      const data = await response.json();
+      
+      if (data.Message === "No Grader Assigned") {
+        setNoGraderAssigned(true);
+        setModalData([]);
+      } else {
+        setNoGraderAssigned(false);
+        setModalData(data);
+      }
+    } catch (error) {
+      console.error('Error fetching modal data:', error);
+      Alert.alert('Error', 'Failed to fetch modal data. Please try again later.');
+    } finally {
+      setModalLoading(false);
+    }
+  }
 
   useEffect(() => {
     fetchData();
@@ -89,6 +116,57 @@ const FacultyMember = (props) => {
     props.navigation.navigate('AddFacultyMembers');
   };
 
+  const handleFacultyNamePress = (facultyId) => {
+    console.log('Faculty ID:', facultyId);
+    setModalVisible(true);
+    fetchModalData(facultyId);
+  };
+
+  const handleModalNamePress = (studentId) => {
+    Alert.alert(
+      "Remove Garder",
+      "Are you sure you want to remove this Garder?",
+      [
+        {
+          text: "Cancel",
+          style: "cancel"
+        },
+        {
+          text: "OK",
+          onPress: async () => {
+            try {
+              await AsyncStorage.setItem('student_id', studentId.toString());
+              console.log('Stored student ID:', studentId);
+
+              // API POST request
+              const response = await fetch(`${BASE_URL}/FinancialAidAllocation/api/Admin/Removegrader?id=${studentId}`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ studentId })
+              });
+
+              if (response.ok) {
+                console.log('Student removed successfully');
+                // Update modal data after removal
+                const updatedModalData = modalData.filter(item => item.studentId !== studentId);
+                setModalData(updatedModalData);
+              } else {
+                console.error('Error removing student');
+                Alert.alert('Error', 'Failed to remove student. Please try again later.');
+              }
+            } catch (error) {
+              console.error('Error storing student ID:', error);
+              Alert.alert('Error', 'Failed to remove student. Please try again later.');
+            }
+          }
+        }
+      ],
+      { cancelable: false }
+    );
+  };
+
   const renderFacultyMember = ({ item }) => (
     <View style={styles.facultyMemberContainer}>
       <Image
@@ -96,7 +174,9 @@ const FacultyMember = (props) => {
         style={styles.facultyMemberImage}
       />
       <View style={styles.facultyMemberInfo}>
-        <Text style={styles.facultyMemberName}>{item.name}</Text>
+        <TouchableOpacity onPress={() => handleFacultyNamePress(item.facultyId)}>
+          <Text style={styles.facultyMemberName}>{item.name}</Text>
+        </TouchableOpacity>
         <TouchableOpacity onPress={() => confirmRemoveFacultyMember(item.facultyId)}>
           <View style={styles.removeButton}>
             <Text style={styles.addButtonText}>Remove</Text>
@@ -104,6 +184,18 @@ const FacultyMember = (props) => {
         </TouchableOpacity>
       </View>
     </View>
+  );
+
+  const renderModalFacultyMember = ({ item }) => (
+    <TouchableOpacity onPress={() => handleModalNamePress(item.studentId)}>
+      <View style={styles.modalFacultyMemberContainer}>
+        <Image
+          source={item.profile_image ? { uri: `${BASE_URL}/FinancialAidAllocation/Content/ProfileImages/${item.profile_image}` } : require('./logo.png')}
+          style={styles.modalFacultyMemberImage}
+        />
+        <Text style={styles.modalFacultyMemberName}>{item.name}</Text>
+      </View>
+    </TouchableOpacity>
   );
 
   const onRefresh = async () => {
@@ -143,6 +235,40 @@ const FacultyMember = (props) => {
           />
         )}
       </SafeAreaView>
+
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => {
+          setModalVisible(!modalVisible);
+        }}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Garder Details</Text>
+            {modalLoading ? (
+              <ActivityIndicator size="large" color="black" style={styles.loader} />
+            ) : (
+              noGraderAssigned ? (
+                <Text style={styles.noGraderText}>No Grader Assigned</Text>
+              ) : (
+                <FlatList
+                  data={modalData}
+                  renderItem={renderModalFacultyMember}
+                  keyExtractor={(item, index) => `${item.facultyId}_${index}`}
+                />
+              )
+            )}
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={() => setModalVisible(false)}
+            >
+              <Text style={styles.closeButtonText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -243,6 +369,56 @@ const styles = StyleSheet.create({
   },
   loader: {
     marginTop: 20,
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContent: {
+    backgroundColor: 'white',
+    borderRadius: 10,
+    padding: 20,
+    alignItems: 'center',
+    width: '80%',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    color:'green',
+  },
+  modalFacultyMemberContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  modalFacultyMemberImage: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    marginRight: 10,
+  },
+  modalFacultyMemberName: {
+    fontSize: 18,
+    color: 'black',
+  },
+  closeButton: {
+    backgroundColor: 'red',
+    padding: 10,
+    borderRadius: 10,
+    marginTop: 10,
+  },
+  closeButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
+  noGraderText: {
+    color: 'red',
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginTop: 10,
   },
 });
 

@@ -36,9 +36,13 @@ import AddUsers from './AddUsers';
 import UpdatedPassword from'./UpdatePassword';
 import UpdateStudent from'./UpdateStudent';
 import ViewApplication from'./VeiwApplication';
+import ViewApplicationCommittee from './veiwApplictionCommittee';
 import CommitteeMemberDashboard from './CommitteeDashBoard';
+import ViewAppAdmin from './ViewAppAdmin'
+import AddSession from './AddSession'
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BASE_URL } from './config';
+
  
 
 const Stack = createNativeStackNavigator();
@@ -233,29 +237,35 @@ const CustomDrawerHeader2 = () => {
       return response.json();
     })
     .then(async data => {
-      setCommitteeInfo(data); // Update state with fetched student info
+      setCommitteeInfo(data); // Update state with fetched committee info
       console.log('Fetched Committee info:', data); // Log the fetched data
   
-      // Store student info in AsyncStorage
+      // Store committeeId in AsyncStorage
       try {
+        if (data && data.committeeId) {
+          await AsyncStorage.setItem('committeeId', data.committeeId.toString());
+          console.log('Committee ID stored in AsyncStorage:', data.committeeId);
+        } else {
+          console.log('Committee ID not found in the fetched data');
+        }
+  
+        // Store committee info in AsyncStorage
         await AsyncStorage.setItem('Committee', JSON.stringify(data));
         console.log('Committee info stored in AsyncStorage');
   
-        // Fetch application status based on student_id
-    
-    if (data && data.committeeId) {
-        //  fetchApplicationStatus(data.adminId);
+        // Fetch application status based on committeeId
+        if (data && data.committeeId) {
+          // fetchApplicationStatus(data.committeeId);
         }
       } catch (error) {
-        console.error('Error storing Admin info in AsyncStorage:', error);
+        console.error('Error storing committee info in AsyncStorage:', error);
       }
     })
     .catch(error => {
       console.error('Error fetching committee information:', error);
       Alert.alert('Error', 'Failed to fetch committee information. Please try again later.');
     });
-  };
-  
+  }; 
   return (
     <View style={{ flexDirection: 'row', marginTop: 15, marginLeft: 10 }}>
       <Avatar.Image
@@ -366,9 +376,12 @@ const App = () => {
         <Stack.Screen name="UpdatedPassword" component={UpdatedPassword} />
         <Stack.Screen name="AddBudgetScreen" component={AddBudgetScreen} />
         <Stack.Screen name="AddStudent" component={AddStudent} />
+        <Stack.Screen name="ViewAppAdmin" component={ViewAppAdmin} />
+        <Stack.Screen name="ViewApplicationCommittee" component={ViewApplicationCommittee} />
         <Stack.Screen name="Policies" component={AddPolicies} />
         <Stack.Screen name="ADDPolicies" component={ADDPOLICIESS} />
         <Stack.Screen name="FacultyMember" component={FacultyMember} />
+        <Stack.Screen name="AddSession" component={AddSession} />
         <Stack.Screen name="AddFacultyMembers" component={AddFacultyMembers} />
         <Stack.Screen name="AddCommitteeMember" component={AddCommitteeMember} />
         <Stack.Screen name="GraderInfo" component={GraderInfo} />
@@ -457,6 +470,16 @@ const CustomDrawerContent1 = (props) => {
         
       
   };
+  const handleSession = () => {
+   
+           
+    props.navigation.navigate('AddSession');
+   
+ 
+
+
+};
+
  
   const handleStudents = () => {
            
@@ -551,7 +574,16 @@ const handleUsers = () => {
     fontSize:20
   }}
 />
-
+<DrawerItem
+  label="ADD Session"
+  onPress={handleSession}
+  labelStyle={{
+    fontWeight: 'bold', // Set font weight to bold
+    textAlign: 'center', // Align text center
+    color:'black',
+    fontSize:20
+  }}
+/>
       <DrawerItem
         label="LogOut"
         onPress={handleLogout}

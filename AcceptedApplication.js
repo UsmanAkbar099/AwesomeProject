@@ -1,26 +1,26 @@
 import React, { useState, useEffect } from 'react';
-import { TextInput, View, Text, StyleSheet, FlatList, Image, TouchableOpacity } from 'react-native';
+import { TextInput, View, Text, StyleSheet, FlatList, Image, TouchableOpacity, RefreshControl } from 'react-native';
 import { BASE_URL } from './config';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+
 const AcceptedApplication = (props) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [facultyMembers, setFacultyMembers] = useState([]);
   const [filteredFacultyMembers, setFilteredFacultyMembers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [refreshing, setRefreshing] = useState(false); // State to track refreshing
 
   useEffect(() => {
-    // Fetch data from API
     fetchData();
   }, []);
 
   useEffect(() => {
-    // Filter faculty members based on search query
     if (searchQuery.trim() === '') {
       setFilteredFacultyMembers(facultyMembers);
     } else {
       const filteredData = facultyMembers.filter((member) =>
-        member.re.name.toLowerCase().includes(searchQuery.toLowerCase())
+        member.name.toLowerCase().includes(searchQuery.toLowerCase())
       );
       setFilteredFacultyMembers(filteredData);
     }
@@ -28,19 +28,23 @@ const AcceptedApplication = (props) => {
 
   const fetchData = async () => {
     try {
+      setRefreshing(true); // Set refreshing to true when fetching data
       const response = await fetch(`${BASE_URL}/FinancialAidAllocation/api/Admin/AcceptedApplication`);
       const data = await response.json();
-      console.log('Fetched data:', data); // Add this line
+      console.log('Fetched data:', data);
       setFacultyMembers(data);
+      setFilteredFacultyMembers(data); // Ensure filtered data is also updated
       setIsLoading(false);
     } catch (error) {
       console.error('Error fetching data: ', error);
       setError(error);
       setIsLoading(false);
+    } finally {
+      setRefreshing(false); // Set refreshing back to false after fetching data
     }
   };
 
-  const handlepress = async (item) => {
+  const handlePress = async (item) => {
     try {
       await AsyncStorage.setItem('selectedApplication', JSON.stringify(item));
       props.navigation.navigate('ViewApplication', { applicationData: item });
@@ -50,17 +54,16 @@ const AcceptedApplication = (props) => {
     }
   };
 
-
   const renderFacultyMember = ({ item }) => (
-    <TouchableOpacity onPress={() => handlepress(item)}>
+    <TouchableOpacity onPress={() => handlePress(item)}>
       <View style={styles.facultyMemberContainer}>
         <View style={styles.facultyMemberInfo}>
-        {item.re.name && <Text style={styles.facultyMemberName}>{item.re.name}</Text>}
-        {item.re.arid_no && <Text style={styles.aridNoText}>{item.re.arid_no}</Text>}
+          {item.name && <Text style={styles.facultyMemberName}>{item.name}</Text>}
+          {item.arid_no && <Text style={styles.aridNoText}>{item.arid_no}</Text>}
         </View>
-        {item.re.profile_image ? (
+        {item.profile_image ? (
           <Image
-            source={{ uri: `${BASE_URL}/FinancialAidAllocation/Content/ProfileImages/${item.re.profile_image}` }}
+            source={{ uri: `${BASE_URL}/FinancialAidAllocation/Content/ProfileImages/${item.profile_image}` }}
             style={styles.facultyMemberImage}
           />
         ) : (
@@ -72,22 +75,6 @@ const AcceptedApplication = (props) => {
       </View>
     </TouchableOpacity>
   );
-  
-  if (isLoading) {
-    return (
-      <View style={styles.container}>
-        <Text>Loading...</Text>
-      </View>
-    );
-  }
-
-  if (error) {
-    return (
-      <View style={styles.container}>
-        <Text>Error: {error.message}</Text>
-      </View>
-    );
-  }
 
   return (
     <View style={styles.container}>
@@ -116,6 +103,12 @@ const AcceptedApplication = (props) => {
         data={filteredFacultyMembers}
         renderItem={renderFacultyMember}
         keyExtractor={(item, index) => (item.id ? item.id.toString() : index.toString())}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={fetchData} // Call fetchData on pull-to-refresh
+          />
+        }
       />
     </View>
   );
