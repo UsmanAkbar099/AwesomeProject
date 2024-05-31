@@ -129,7 +129,7 @@ const AssignGrader = (props) => {
 
   useEffect(() => {
     const filteredData = assignGrader.filter(item =>
-      item.arid_no.toLowerCase().includes(searchQuery.toLowerCase())
+      item && item.arid_no && item.arid_no.toLowerCase().includes(searchQuery.toLowerCase())
     );
     setFilteredAssignGrader(filteredData);
   }, [searchQuery, assignGrader]);

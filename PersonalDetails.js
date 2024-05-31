@@ -64,7 +64,10 @@ const PersonalDetails = ({ route, navigation }) => {
             Alert.alert('Error', 'Please enter required amount');
             return;
         }
-
+    
+        // Check if uploadSalarySlip is an array and has any value
+        const isUploadSalarySlipPicked = Array.isArray(data.uploadDocument) && data.uploadDocument.length > 0;
+    
         const formData = new FormData();
         formData.append('status', data.father);
         formData.append('occupation', data.job);
@@ -77,27 +80,34 @@ const PersonalDetails = ({ route, navigation }) => {
         formData.append('reason', reason);
         formData.append('amount', amount);
         formData.append('length', 1);
-        formData.append('isPicked', true);
+        formData.append('isPicked', isUploadSalarySlipPicked); // Set isPicked based on the boolean variable
         formData.append('studentId', data.studentid);
+    
+        // Check if agreement is an array and handle it correctly
+        if (Array.isArray(agreement)) {
+            agreement.forEach((file, index) => {
+                const fileToUpload = {
+                    uri: Platform.OS === 'ios' ? file.uri.replace('file://', '') : file.uri,
+                    type: file.type,
+                    name: file.name,
+                };
+                formData.append(`agreement${index}`, fileToUpload);
+            });
+        }
+    
+        // Check if uploadSalarySlip is an array and handle it correctly
+        if (Array.isArray(data.uploadDocument)) {
+            data.uploadDocument.forEach((file, index) => {
+                const fileToUpload = {
+                    uri: Platform.OS === 'ios' ? file.uri.replace('file://', '') : file.uri,
+                    type: file.type,
+                    name: file.name,
+                };
+                formData.append(`docs`, fileToUpload);
+            });
+        }
 
-        agreement.forEach((file, index) => {
-            const fileToUpload = {
-                uri: Platform.OS === 'ios' ? file.uri.replace('file://', '') : file.uri,
-                type: file.type,
-                name: file.name,
-            };
-            formData.append(`agreement${index}`, fileToUpload);
-        });
-
-        data.uploadSalarySlip.forEach((file, index) => {
-            const fileToUpload = {
-                uri: Platform.OS === 'ios' ? file.uri.replace('file://', '') : file.uri,
-                type: file.type,
-                name: file.name,
-            };
-            formData.append(`docs`, fileToUpload);
-        });
-
+    
         try {
             const response = await fetch(`${BASE_URL}/FinancialAidAllocation/api/Student/sendApplication`, {
                 method: 'POST',
@@ -106,7 +116,7 @@ const PersonalDetails = ({ route, navigation }) => {
                 },
                 body: formData,
             });
-
+    
             if (response.ok) {
                 const data = await response.json();
                 console.log('Form submitted successfully:', data);
@@ -127,7 +137,6 @@ const PersonalDetails = ({ route, navigation }) => {
             }
         }
     };
-
     return (
         <View style={styles.container}>
             <Text style={styles.name}>Personal Details</Text>

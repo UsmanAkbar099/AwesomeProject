@@ -1,45 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, Alert, ScrollView, RefreshControl } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import logo from './logo.png';
+import logo from './logo.png'; // This import seems unused, consider removing if not needed
 import scholarship from './scholarship.png';
 import Need from './Need.png';
 import Merit from './Merit.png';
 import Help from './Help.png';
-import {BASE_URL} from './config';
+import { BASE_URL } from './config';
 
 const StudentDashboard = (props) => {
-  const navigateToScholarship = () => {
-    if (!applicationStatus || applicationStatus.length === 0 || applicationStatus[0].applicationStatus === 'Rejected') {
-      props.navigation.navigate("INFOFROM");
-    } else {
-      // Handle other cases, like showing an alert or taking alternative actions
-      Alert.alert('Cannot Apply', 'Your scholarships at the moment is in processing.');
-    }
-  };
-
-  const navigateToMerit = () => {
-    props.navigation.navigate("MeritBaseCriteria");
-  };
-
-  const navigateToNeed = () => {
-    props.navigation.navigate("NeedBaseCriteria");
-  };
-  
-  const navigateToHelp = () => {
-    props.navigation.navigate("NeedHelp");
-  };
-
-  const navigateToLog = () => {
-    props.navigation.navigate("Login");
-  };
-
-  const [profileId , setProfileId] = useState(null);
+  const [profileId, setProfileId] = useState(null);
   const [studentInfo, setStudentInfo] = useState(null);
   const [applicationStatus, setApplicationStatus] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
-    // Fetch profileId from AsyncStorage or wherever it's stored
     getStoredProfileId();
   }, []);
 
@@ -56,7 +31,7 @@ const StudentDashboard = (props) => {
       console.error('Error retrieving profile ID from AsyncStorage:', error);
     }
   };
-  
+
   const fetchStudentInfo = (profileId) => {
     fetch(`${BASE_URL}/FinancialAidAllocation/api/Student/getStudentInfo?id=${profileId}`, {
       method: 'GET',
@@ -64,35 +39,33 @@ const StudentDashboard = (props) => {
         'Content-Type': 'application/json',
       },
     })
-    .then(response => {
-      if (!response.ok) {
-        throw new Error(`Network response was not ok: ${response.status} - ${response.statusText}`);
-      }
-      return response.json();
-    })
-    .then(async data => {
-      setStudentInfo(data); // Update state with fetched student info
-      console.log('Fetched student info:', data); // Log the fetched data
-  
-      // Store student info in AsyncStorage
-      try {
-        await AsyncStorage.setItem('studentInfo', JSON.stringify(data));
-        console.log('Student info stored in AsyncStorage');
-  
-        // Fetch application status based on student_id
-        if (data && data.student_id) {
-          fetchApplicationStatus(data.student_id);
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`Network response was not ok: ${response.status} - ${response.statusText}`);
         }
-      } catch (error) {
-        console.error('Error storing student info in AsyncStorage:', error);
-      }
-    })
-    .catch(error => {
-      console.error('Error fetching student information:', error);
-      Alert.alert('Error', 'Failed to fetch student information. Please try again later.');
-    });
+        return response.json();
+      })
+      .then(async data => {
+        setStudentInfo(data);
+        console.log('Fetched student info:', data);
+
+        try {
+          await AsyncStorage.setItem('studentInfo', JSON.stringify(data));
+          console.log('Student info stored in AsyncStorage');
+
+          if (data && data.student_id) {
+            fetchApplicationStatus(data.student_id);
+          }
+        } catch (error) {
+          console.error('Error storing student info in AsyncStorage:', error);
+        }
+      })
+      .catch(error => {
+        console.error('Error fetching student information:', error);
+        Alert.alert('Error', 'Failed to fetch student information. Please try again later.');
+      });
   };
-  
+
   const fetchApplicationStatus = (studentId) => {
     fetch(`${BASE_URL}/FinancialAidAllocation/api/Student/getStudentApplicationStatus?id=${studentId}`, {
       method: 'GET',
@@ -100,24 +73,64 @@ const StudentDashboard = (props) => {
         'Content-Type': 'application/json',
       },
     })
-    .then(response => {
-      if (!response.ok) {
-        throw new Error(`Network response was not ok: ${response.status} - ${response.statusText}`);
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`Network response was not ok: ${response.status} - ${response.statusText}`);
+        }
+        return response.json();
+      })
+      .then(data => {
+        setApplicationStatus(data);
+        console.log('Fetched application status:', data);
+      })
+      .catch(error => {
+        console.error('Error fetching application status:', error);
+        Alert.alert('Error', 'Failed to fetch application status. Please try again later.');
+      });
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      const storedProfileId = await AsyncStorage.getItem('profileId');
+      if (storedProfileId !== null) {
+        fetchStudentInfo(storedProfileId);
+      } else {
+        console.log('Profile ID not found in AsyncStorage');
       }
-      return response.json();
-    })
-    .then(data => {
-      setApplicationStatus(data); // Update state with fetched application status
-      console.log('Fetched application status:', data); // Log the fetched data
-    })
-    .catch(error => {
-      console.error('Error fetching application status:', error);
-      Alert.alert('Error', 'Failed to fetch application status. Please try again later.');
-    });
+    } catch (error) {
+      console.error('Error retrieving profile ID from AsyncStorage:', error);
+    }
+    setRefreshing(false);
+  };
+
+  const navigateToScholarship = () => {
+    if (!applicationStatus || applicationStatus.length === 0 || applicationStatus[0].applicationStatus === 'Rejected') {
+      props.navigation.navigate("INFOFROM");
+    } else {
+      Alert.alert('Cannot Apply', 'Your scholarships at the moment is in processing.');
+    }
+  };
+
+  const navigateToMerit = () => {
+    props.navigation.navigate("MeritBaseCriteria");
+  };
+
+  const navigateToNeed = () => {
+    props.navigation.navigate("NeedBaseCriteria");
+  };
+
+  const navigateToHelp = () => {
+    props.navigation.navigate("NeedHelp");
   };
 
   return (
-    <View style={styles.container}>
+    <ScrollView
+      contentContainerStyle={styles.container}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+      }
+    >
       <View style={styles.frombox}>
         <Text style={styles.wel}>Welcome</Text>
         {studentInfo && (
@@ -131,17 +144,15 @@ const StudentDashboard = (props) => {
           {applicationStatus && applicationStatus.length > 0 ? applicationStatus[0].applicationStatus : "Not Submitted"}
         </Text>
       </View>
-      
+
       <View>
-  {!applicationStatus || applicationStatus.length === 0 && (
-    <View style={styles.DATE}>
-      <Text style={styles.heading}>Apply Before Due Date</Text>
-      <Text style={styles.date}>11 May</Text>
-    </View>
-  )}
-</View>
-
-
+        {!applicationStatus || applicationStatus.length === 0 && (
+          <View style={styles.DATE}>
+            <Text style={styles.heading}>Apply Before Due Date</Text>
+            <Text style={styles.date}>11 May</Text>
+          </View>
+        )}
+      </View>
 
       <View style={styles.buttonContainer}>
         <TouchableOpacity style={styles.button} onPress={navigateToScholarship}>
@@ -163,18 +174,17 @@ const StudentDashboard = (props) => {
           <Text style={styles.buttonText}>Need Help</Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    flexGrow: 1,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#82b7bf',
   },
-
   heading: {
     fontSize: 24,
     fontWeight: 'bold',
@@ -186,14 +196,14 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 5,
     color: 'red',
-    marginLeft: 50
+    marginLeft: 50,
   },
   wel: {
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 10,
     color: 'black',
-    marginLeft: 20
+    marginLeft: 20,
   },
   nam: {
     fontSize: 20,
@@ -214,7 +224,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 10,
     color: 'black',
-    marginLeft: 90
+    marginLeft: 90,
   },
   stat: {
     fontSize: 20,
@@ -222,36 +232,35 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     color: 'gray',
     textAlign: 'center',
-    marginLeft: 150
+    marginLeft: 150,
   },
   buttonContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
     width: '90%',
-    marginBottom: 40, // Adjust margin bottom to provide spacing between button rows
+    marginBottom: 40,
   },
-
   buttonContainers: {
     flexDirection: 'row',
     justifyContent: 'space-around',
     width: '90%',
-    marginBottom: 30, // Adjust margin bottom to provide spacing between button rows
+    marginBottom: 30,
   },
   button: {
     backgroundColor: '#ffffff',
     padding: 15,
     borderRadius: 10,
     alignItems: 'center',
-    width: '45%', // Adjusted width to fit two buttons in one row with some spacing
-    height: '110%'
+    width: '45%',
+    height: '110%',
   },
   buttons: {
     backgroundColor: '#ffffff',
     padding: 15,
     borderRadius: 10,
     alignItems: 'center',
-    width: '45%', // Adjusted width to fit two buttons in one row with some spacing
-    height: '110%'
+    width: '45%',
+    height: '110%',
   },
   buttonText: {
     color: 'black',
@@ -274,6 +283,7 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     marginTop: 1,
   },
+  
 });
 
 export default StudentDashboard;

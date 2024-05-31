@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Image } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Alert } from 'react-native';
 import { RadioButton } from 'react-native-paper';
 import DocumentPicker from 'react-native-document-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BASE_URL } from './config';
-
 
 const AfterLogin = (props) => {
     const [arid, setArid] = useState('');
@@ -20,68 +19,37 @@ const AfterLogin = (props) => {
     const [contactno, setContactno] = useState('');
     const [salary, setSalary] = useState('');
     const [studentid, setStudentid] = useState('');
+    const [uploadDocument, setUploadDocument] = useState(null);
 
-    const [uploadSalarySlip, setUploadSalarySlip] = useState(null);
-    const [uploadDeathCertificate, setUploadDeathCertificate] = useState(null);
-
-    const FileData = (event) => {
-        // Handle file upload
+    const handleUploadDocument = async () => {
+        try {
+            const res = await DocumentPicker.pick({
+                type: [DocumentPicker.types.pdf, DocumentPicker.types.doc, DocumentPicker.types.docx, DocumentPicker.types.images],
+            });
+            console.log('File picked:', res); // Log the picked file object
+            // Set the uploaded file to state
+            setUploadDocument(res);
+        } catch (err) {
+            if (DocumentPicker.isCancel(err)) {
+                // Handle cancelled picker
+            } else {
+                // Handle other errors
+                console.log(err);
+            }
+        }
     };
 
-    const FatherStatus = (value) => {
-        setFather(value);
-    };
-
-    const clearFrom = () => {
-        // Handle form submission
-
+    const clearForm = () => {
         setFather('');
         setGcontact('');
         setGname('');
         setGrelation('');
-        setUploadSalarySlip('');
-        setUploadDeathCertificate('');
+        setUploadDocument(null);
         setSalary('');
         setJobTitle('');
         setContactno('');
         setStudentid('');
     };
-
-    const handleUploadSalary = async () => {
-        try {
-            const res = await DocumentPicker.pick({
-                type: [DocumentPicker.types.pdf, DocumentPicker.types.doc, DocumentPicker.types.docx, DocumentPicker.types.images],
-            });
-            console.log('File picked:', res); // Log the picked file object
-            // Set the uploaded file to state
-            setUploadSalarySlip(res);
-        } catch (err) {
-            if (DocumentPicker.isCancel(err)) {
-                // Handle cancelled picker
-            } else {
-                // Handle other errors
-                console.log(err);
-            }
-        }
-    };
-    const handleDeathCertificate = async () => {
-        try {
-            const res = await DocumentPicker.pick({
-                type: [DocumentPicker.types.pdf, DocumentPicker.types.doc, DocumentPicker.types.docx, DocumentPicker.types.images],
-            });
-            console.log('File picked:', res); // Log the picked file object
-            // Set the uploaded file to state
-            setUploadDeathCertificate(res);
-        } catch (err) {
-            if (DocumentPicker.isCancel(err)) {
-                // Handle cancelled picker
-            } else {
-                // Handle other errors
-                console.log(err);
-            }
-        }
-    };
-
 
     const handleNext = async () => {
         // Perform validation checks
@@ -99,8 +67,9 @@ const AfterLogin = (props) => {
             alert('Please enter your semester.');
             return;
         }
+
         if (cgpa.trim() === '') {
-            alert('Please enter your cgpa.');
+            alert('Please enter your CGPA.');
             return;
         }
 
@@ -124,7 +93,7 @@ const AfterLogin = (props) => {
                 alert('Please enter guardian relation.');
                 return;
             }
-            if (!uploadDeathCertificate) {
+            if (!uploadDocument) {
                 alert('Please upload the death certificate.');
                 return;
             }
@@ -148,6 +117,10 @@ const AfterLogin = (props) => {
                 alert('Please enter salary.');
                 return;
             }
+            if (!uploadDocument) {
+                alert('Please upload the salary slip.');
+                return;
+            }
         }
 
         // If all validations pass, store data in AsyncStorage
@@ -165,25 +138,26 @@ const AfterLogin = (props) => {
             gcontact,
             grelation,
             studentid,
-            uploadSalarySlip,
-            uploadDeathCertificate,
+            uploadDocument,
         };
 
         try {
             await AsyncStorage.setItem('formData', JSON.stringify(formData));
             console.log('Form data stored in AsyncStorage');
-            props.navigation.navigate("PersonalDetails",{data:formData});
+            props.navigation.navigate("PersonalDetails", { data: formData });
         } catch (error) {
             console.error('Error storing form data in AsyncStorage:', error);
         }
     };
 
     const handleCancel = () => {
-        clearFrom();
+        clearForm();
         console.log('Form cleared');
     };
+
     const [profileId, setProfileId] = useState(null);
     const [studentInfo, setStudentInfo] = useState(null);
+
     useEffect(() => {
         // Fetch profileId from AsyncStorage or wherever it's stored
         getStoredProfileId();
@@ -230,11 +204,6 @@ const AfterLogin = (props) => {
                 try {
                     await AsyncStorage.setItem('studentInfo', JSON.stringify(data));
                     console.log('Student info stored in AsyncStorage');
-
-                    // Fetch application status based on student_id
-                    if (data && data.student_id) {
-                        // fetchApplicationStatus(data.student_id);
-                    }
                 } catch (error) {
                     console.error('Error storing student info in AsyncStorage:', error);
                 }
@@ -291,7 +260,7 @@ const AfterLogin = (props) => {
                         <RadioButton.Android
                             value="Alive"
                             status={father === 'Alive' ? 'checked' : 'unchecked'}
-                            onPress={() => FatherStatus('Alive')}
+                            onPress={() => setFather('Alive')}
                         />
                         <Text>Alive</Text>
                     </View>
@@ -299,7 +268,7 @@ const AfterLogin = (props) => {
                         <RadioButton.Android
                             value="Deceased"
                             status={father === 'Deceased' ? 'checked' : 'unchecked'}
-                            onPress={() => FatherStatus('Deceased')}
+                            onPress={() => setFather('Deceased')}
                         />
                         <Text>Deceased</Text>
                     </View>
@@ -323,12 +292,12 @@ const AfterLogin = (props) => {
                         />
                         <TextInput
                             style={styles.input}
-                            placeholder="Guardian Relation "
+                            placeholder="Guardian Relation"
                             onChangeText={setGrelation}
                             value={grelation}
                         />
-                        <TouchableOpacity style={styles.uploadButton} onPress={handleDeathCertificate}>
-                            <Text style={styles.inputs}>{uploadDeathCertificate ? uploadDeathCertificate[0].name : 'Upload Death Certificate'}</Text>
+                        <TouchableOpacity style={styles.uploadButton} onPress={handleUploadDocument}>
+                            <Text style={styles.inputs}>{uploadDocument ? uploadDocument[0].name : 'Upload Death Certificate'}</Text>
                         </TouchableOpacity>
                     </View>
                 )}
@@ -362,8 +331,8 @@ const AfterLogin = (props) => {
                             onChangeText={setSalary}
                             value={salary}
                         />
-                        <TouchableOpacity style={styles.uploadButton} onPress={handleUploadSalary}>
-                            <Text style={styles.inputs}>{uploadSalarySlip ? uploadSalarySlip[0].name : 'Upload Salary Slip'}</Text>
+                        <TouchableOpacity style={styles.uploadButton} onPress={handleUploadDocument}>
+                            <Text style={styles.inputs}>{uploadDocument ? uploadDocument[0].name : 'Upload Salary Slip'}</Text>
                         </TouchableOpacity>
                     </View>
                 )}
@@ -394,7 +363,6 @@ const styles = {
     },
     formBox: {
         width: '80%',
-
         backgroundColor: '#82b7bf',
         padding: 20,
         borderRadius: 30
@@ -441,7 +409,6 @@ const styles = {
         padding: 10,
         borderRadius: 50,
         marginBottom: 10,
-
     },
     inputs: {
         color: 'blue',
@@ -455,7 +422,6 @@ const styles = {
         marginBottom: 1,
         paddingVertical: 10,
         width: '40%',
-
         alignItems: 'center'
     },
     buttonText: {
