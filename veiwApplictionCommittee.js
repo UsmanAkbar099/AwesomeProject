@@ -147,6 +147,9 @@ const ViewApplicationcomm = (props) => {
         } else if (item.document_type === 'houseAgreement') {
             uri = `${BASE_URL}/FinancialAidAllocation/Content/HouseAgreement/${item.image}`;
         }
+        else if (item.document_type === 'deathcertificate') {
+            uri = `${BASE_URL}/FinancialAidAllocation/Content/DeathCertificates/${item.image}`;
+        }
 
         if (fileExtension === 'pdf') {
             return (

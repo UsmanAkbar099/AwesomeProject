@@ -67,7 +67,7 @@ const StudentDashboard = (props) => {
   };
 
   const fetchApplicationStatus = (studentId) => {
-    fetch(`${BASE_URL}/FinancialAidAllocation/api/Student/getStudentApplicationStatus?id=${studentId}`, {
+    fetch(`${BASE_URL}/FinancialAidAllocation/api/Admin/getStudentApplicationStatus?id=${studentId}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

@@ -40,6 +40,7 @@ import ViewApplicationCommittee from './veiwApplictionCommittee';
 import CommitteeMemberDashboard from './CommitteeDashBoard';
 import ViewAppAdmin from './ViewAppAdmin'
 import AddSession from './AddSession'
+import FacultyDashBoard from'./FacultyDashBoard'
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BASE_URL } from './config';
 
@@ -286,6 +287,92 @@ const CustomDrawerHeader2 = () => {
     </View>
   );
 };
+const CustomDrawerHeader3 = () => {
+  const [profileId , setProfileId] = useState(null);
+  const [facultyInfo, setFacultyInfo] = useState(null);
+  useEffect(() => {
+    // Fetch profileId from AsyncStorage or wherever it's stored
+    getStoredProfileId();
+  }, []);
+
+  const getStoredProfileId = async () => {
+    try {
+      const storedProfileId = await AsyncStorage.getItem('profileId');
+      if (storedProfileId !== null) {
+        setProfileId(storedProfileId);
+        fetchfacultyInfo(storedProfileId);
+      } else {
+        console.log('Profile ID not found in AsyncStorage');
+      }
+    } catch (error) {
+      console.error('Error retrieving profile ID from AsyncStorage:', error);
+    }
+  };
+  
+  const fetchfacultyInfo = (profileId) => {
+    fetch(`${BASE_URL}/FinancialAidAllocation/api/faculty/FacultyInfo?id=${profileId}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error(`Network response was not ok: ${response.status} - ${response.statusText}`);
+      }
+      return response.json();
+    })
+    .then(async data => {
+      setFacultyInfo(data); // Update state with fetched committee info
+      console.log('Fetched Faculty info:', data); // Log the fetched data
+  
+      // Store committeeId in AsyncStorage
+      try {
+        if (data && data.facultyId) {
+          await AsyncStorage.setItem('facultyId', data.facultyId.toString());
+          console.log('faculty ID stored in AsyncStorage:', data.facultyId);
+        } else {
+          console.log('faculty ID not found in the fetched data');
+        }
+  
+        // Store committee info in AsyncStorage
+        await AsyncStorage.setItem('Faculty', JSON.stringify(data));
+        console.log('faculty info stored in AsyncStorage');
+  
+        // Fetch application status based on committeeId
+        if (data && data.facultyId) {
+          // fetchApplicationStatus(data.committeeId);
+        }
+      } catch (error) {
+        console.error('Error storing Faculty info in AsyncStorage:', error);
+      }
+    })
+    .catch(error => {
+      console.error('Error fetching faculty information:', error);
+      Alert.alert('Error', 'Failed to fetch faculty information. Please try again later.');
+    });
+  }; 
+  return (
+    <View style={{ flexDirection: 'row', marginTop: 15, marginLeft: 10 }}>
+      <Avatar.Image
+        source={require('./logo.png')} // Replace 'your-profile-image-path.jpg' with your actual image path
+        size={50}
+      />
+      <View style={{ marginLeft: 10, flexDirection: 'column' }}>
+      {facultyInfo && (
+          <>
+        <Title style={styles.title}>{facultyInfo.name}</Title>
+        <Text style={styles.caption}>Faculty Member </Text>
+        </>
+        )}
+
+
+        
+      </View>
+    </View>
+  );
+};
+
 
 
 const App = () => {
@@ -363,6 +450,32 @@ const App = () => {
          </Drawer.Navigator>
           )}
         </Stack.Screen>
+        <Stack.Screen name="FacultyDashBoard" options={{ headerShown: false }}>
+          {() => (
+            <Drawer.Navigator drawerContent={CustomDrawerContent3}>
+      <Drawer.Screen
+  name="FacultyDashBoard"
+  component={FacultyDashBoard}
+  options={{
+    headerShown: true, // Ensure header is shown if needed
+    headerStyle: { backgroundColor: 'lightblue' }, // Change header background color
+    drawerStyle: { backgroundColor: 'lightblue' }, // Change drawer background color
+    headerTitleAlign: 'center',
+    headerRight: () => (
+      <Image
+        source={require('./logo.png')} // Replace 'path/to/your/image.png' with the correct path
+        style={{ width: 40, height: 40, marginRight: 10 }} // Adjust the width, height, and margin as needed
+      />
+    ),
+    
+  }}
+/>
+         </Drawer.Navigator>
+          )}
+        </Stack.Screen>
+
+
+
         <Stack.Screen name="MeritBaseShortListing" component={MeritBaseShortListing} />
         <Stack.Screen name="NeedBaseApplication" component={NeedBaseApplication} />
         <Stack.Screen name="AcceptedApplication" component={AcceptedApplication} />
@@ -423,6 +536,50 @@ const CustomDrawerContent = (props) => {
   return (
     <DrawerContentScrollView {...props}>
       <CustomDrawerHeader />
+      <DrawerItemList {...props} />
+      <DrawerItem
+        label="LogOut"
+        onPress={handleLogout}
+        labelStyle={{
+          fontWeight: 'bold', // Set font weight to bold
+          textAlign: 'center', // Align text center
+          color:'black',
+          fontSize:20
+        }}
+      />
+    </DrawerContentScrollView>
+  );
+};
+const CustomDrawerContent3 = (props) => {
+  const handleLogout = () => {
+    Alert.alert(
+      'Logout',
+      'Are you sure you want to log out?',
+      [
+        {
+          text: 'No',
+          style: 'cancel',
+        },
+        {
+          text: 'Yes',
+          onPress: () => {
+            // Handle logout here
+            // For example, you can navigate to the login screen or close the application
+            // Replace the following line with your logout logic
+             props.navigation.navigate('Login');
+            // Or close the application
+             //RNExitApp.exitApp();
+            // Note: You need to import RNExitApp from 'react-native-exit-app'
+          },
+        },
+      ],
+      { cancelable: false }
+    );
+  };
+
+  return (
+    <DrawerContentScrollView {...props}>
+      <CustomDrawerHeader3 />
       <DrawerItemList {...props} />
       <DrawerItem
         label="LogOut"

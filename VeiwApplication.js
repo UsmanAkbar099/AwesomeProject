@@ -63,6 +63,9 @@ const ViewApplication = () => {
         } else if (item.document_type === 'houseAgreement') {
             uri = `${BASE_URL}/FinancialAidAllocation/Content/HouseAgreement/${item.image}`;
         }
+       else if (item.document_type === 'deathcertificate') {
+        uri = `${BASE_URL}/FinancialAidAllocation/Content/DeathCertificates/${item.image}`;
+    }
 
         if (fileExtension === 'pdf') {
             return (
@@ -171,7 +174,7 @@ const ViewApplication = () => {
                 visible={isPdfModalVisible}
                 onRequestClose={() => setIsPdfModalVisible(false)}
             >
-                <View style={styles.centeredView}>
+                <View style={styles.centeredViews}>
                     <View style={styles.imageModalView}>
                         <TouchableOpacity onPress={() => setIsPdfModalVisible(false)}>
                             <Text style={styles.closeButton}>Your File Is Downloading</Text>

@@ -5,7 +5,7 @@ import { BASE_URL } from './config';
 import { WebView } from 'react-native-webview';
 import { PieChart } from 'react-native-chart-kit';
 
-const ViewApplicationAdmin = () => {
+const ViewApplication = () => {
     const [applicationData, setApplicationData] = useState(null);
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [isImageModalVisible, setIsImageModalVisible] = useState(false);
@@ -57,14 +57,43 @@ const ViewApplicationAdmin = () => {
                   text: "Cancel",
                   style: "cancel"
               },
-              { text: "Reject", onPress: () => handleRejectConfirmation() }
+              { text: "Yes", onPress: () => handleRejectConfirmation() }
           ]
       );
   };
 
-  const handleRejectConfirmation = () => {
+  const handleRejectConfirmation = async () => {
       // Handle rejection here, you can put your logic to update the application status or perform any other actions
       console.log("Application rejected");
+
+      const applicationId = applicationData?.applicationID; // Ensure you have the application ID
+      console.log(applicationId);
+      if (!applicationId) {
+          alert('Application ID is missing');
+          return;
+      }
+
+      try {
+          const response = await fetch(`${BASE_URL}/FinancialAidAllocation/api/Admin/RejectApplication?applicationid=${applicationId}`, {
+              method: 'POST',
+              headers: {
+                  'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ status: 'Rejected' }),
+          });
+
+          const result = await response.json();
+
+          if (response.ok) {
+              alert('Application rejected successfully!');
+              console.log('Application rejected:', result);
+          } else {
+              alert('Failed to reject application');
+              console.error('Error:', result);
+          }
+      } catch (error) {
+          console.error('Failed to reject application', error);
+      }
   };
 
     const handlePdfPress = (uri) => {
@@ -83,6 +112,9 @@ const ViewApplicationAdmin = () => {
             uri = `${BASE_URL}/FinancialAidAllocation/Content/SalarySlip/${item.image}`;
         } else if (item.document_type === 'houseAgreement') {
             uri = `${BASE_URL}/FinancialAidAllocation/Content/HouseAgreement/${item.image}`;
+        }
+        else if (item.document_type === 'deathcertificate') {
+            uri = `${BASE_URL}/FinancialAidAllocation/Content/DeathCertificates/${item.image}`;
         }
 
         if (fileExtension === 'pdf') {
@@ -168,16 +200,39 @@ const ViewApplicationAdmin = () => {
     };
 
     const handleSaveAmount = async () => {
-        try {
-            await AsyncStorage.setItem('acceptedAmount', amount);
-            setIsAcceptModalVisible(false);
-            //alert('Amount saved successfully!');
-            console.log(amount);
-        } catch (error) {
-            console.error('Failed to save amount in AsyncStorage', error);
-        }
-    };
+      try {
+          await AsyncStorage.setItem('acceptedAmount', amount);
+          setIsAcceptModalVisible(false);
+          
 
+          const applicationId = applicationData?.applicationID; // Ensure you have the application ID
+          console.log(amount,applicationId);
+          if (!applicationId) {
+              alert('Application ID is missing');
+              return;
+          }
+
+          const response = await fetch(`${BASE_URL}/FinancialAidAllocation/api/Admin/AcceptApplication?amount=${amount}&applicationid=${applicationId}`, {
+              method: 'POST',
+              headers: {
+                  'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ amount }),
+          });
+
+          const result = await response.json();
+
+          if (response.ok) {
+              alert('Accept Application successfully!');
+              console.log('Amount saved:', result);
+          } else {
+              alert('Failed to Accept Application');
+              console.error('Error:', result);
+          }
+      } catch (error) {
+          console.error('Failed to save Accepted Application in AsyncStorage', error);
+      }
+  };
     return (
         <View style={styles.container}>
             <Text style={styles.headerText}>Application Status Summary</Text>
@@ -261,9 +316,6 @@ const ViewApplicationAdmin = () => {
                             <Text style={styles.studentInfoText}>
                                 <Text style={styles.boldText}>Salary: </Text> {applicationData.salary }
                             </Text>
-                            <Text style={styles.studentInfoText}>
-                                <Text style={styles.boldText}>Reasons: </Text> {applicationData.reason }
-                            </Text>
                         </View>
                     )}
                 </View>
@@ -291,7 +343,7 @@ const ViewApplicationAdmin = () => {
                 visible={isPdfModalVisible}
                 onRequestClose={() => setIsPdfModalVisible(false)}
             >
-                <View style={styles.centeredView}>
+                <View style={styles.centeredViews}>
                     <View style={styles.imageModalView}>
                         <TouchableOpacity onPress={() => setIsPdfModalVisible(false)}>
                             <Text style={styles.closeButton}>Your File Is Downloading</Text>
@@ -383,7 +435,7 @@ const styles = StyleSheet.create({
         height: 200,
     },
     studentInfoContainer: {
-        marginBottom: 150,
+        marginBottom: 20,
         marginTop: 5,
         padding: 20,
         backgroundColor: 'white',
@@ -425,6 +477,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginTop: 22,
     },
+    
     imageModalView: {
         margin: 20,
         backgroundColor: 'white',
@@ -530,4 +583,4 @@ const styles = StyleSheet.create({
     },
 });
 
-export default ViewApplicationAdmin;
+export default ViewApplication;

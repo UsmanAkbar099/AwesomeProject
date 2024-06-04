@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { TextInput, View, Text, StyleSheet, FlatList, Image, RefreshControl } from 'react-native';
+import { TextInput, View, Text, StyleSheet, FlatList, Image, TouchableOpacity, RefreshControl } from 'react-native';
 import { BASE_URL } from './config';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const RejectedApplication = (props) => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -43,41 +44,37 @@ const RejectedApplication = (props) => {
     }
   };
 
+  const handlePress = async (item) => {
+    try {
+      await AsyncStorage.setItem('selectedApplication', JSON.stringify(item));
+      props.navigation.navigate('ViewApplication', { applicationData: item });
+      console.log('Stored data:', item); // Log the stored data to console
+    } catch (error) {
+      console.error('Error storing data:', error);
+    }
+  };
+
   const renderFacultyMember = ({ item }) => (
-    <View style={styles.facultyMemberContainer}>
-      <View style={styles.facultyMemberInfo}>
-        <Text style={styles.facultyMemberName}>{item.name}</Text>
-        <Text style={styles.aridNoText}>{item.arid_no}</Text>
+    <TouchableOpacity onPress={() => handlePress(item)}>
+      <View style={styles.facultyMemberContainer}>
+        <View style={styles.facultyMemberInfo}>
+          {item.name && <Text style={styles.facultyMemberName}>{item.name}</Text>}
+          {item.arid_no && <Text style={styles.aridNoText}>{item.arid_no}</Text>}
+        </View>
+        {item.profile_image ? (
+          <Image
+            source={{ uri: `${BASE_URL}/FinancialAidAllocation/Content/ProfileImages/${item.profile_image}` }}
+            style={styles.facultyMemberImage}
+          />
+        ) : (
+          <Image
+            source={require('./logo.png')}
+            style={styles.facultyMemberImage}
+          />
+        )}
       </View>
-      {item.profile_image ? (
-        <Image
-          source={{ uri: `${BASE_URL}/FinancialAidAllocation/Content/ProfileImages/${item.profile_image}` }}
-          style={styles.facultyMemberImage}
-        />
-      ) : (
-        <Image
-          source={require('./logo.png')}
-          style={styles.facultyMemberImage}
-        />
-      )}
-    </View>
+    </TouchableOpacity>
   );
-
-  if (isLoading) {
-    return (
-      <View style={styles.container}>
-        <Text>Loading...</Text>
-      </View>
-    );
-  }
-
-  if (error) {
-    return (
-      <View style={styles.container}>
-        <Text>Error: {error.message}</Text>
-      </View>
-    );
-  }
 
   return (
     <View style={styles.container}>
@@ -135,7 +132,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 10,
     color: 'black',
-    marginLeft: 20
+    marginLeft: 20,
   },
   nam: {
     fontSize: 20,

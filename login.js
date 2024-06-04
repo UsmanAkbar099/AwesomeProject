@@ -50,6 +50,12 @@ const Login = (props) => {
           const profileId = data.profileId;
           AsyncStorage.setItem('profileId', profileId.toString());
           AsyncStorage.setItem('savedUsername', username);
+        } else if (role === 3) {
+          props.navigation.navigate("FacultyDashBoard");
+          const profileId = data.profileId;
+          AsyncStorage.setItem('profileId', profileId.toString());
+          AsyncStorage.setItem('savedUsername', username);
+        
         } else if (role === 4) {
           props.navigation.navigate("CommitteeDashBoard");
           const profileId = data.profileId;
