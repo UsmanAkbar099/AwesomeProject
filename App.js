@@ -29,6 +29,7 @@ import AddPolicies from './AddPolicies';
 import AddStudent from './AddStudent';
 import AddFacultyMembers from './AddFacultyMembers';
 import ADDPOLICIESS from './ADDPOLICIESS'
+import AllocationSheet from './AllocationSheet'
 import GraderInfo from './GraderInfo';
 import AddBudgetScreen from './AddBudgetScreen';
 import StudentData from './StudentData';
@@ -484,6 +485,8 @@ const App = () => {
         <Stack.Screen name="AssignGrader" component={AssignGrader} />
         <Stack.Screen name="BudgetHistory" component={BudgetHistory} />
         <Stack.Screen name="AddUsers" component={AddUsers} />
+        <Stack.Screen name="AllocationSheet" component={AllocationSheet} />
+
         <Stack.Screen name="ViewApplication" component={ViewApplication} />
         <Stack.Screen name="UpdateStudent" component={UpdateStudent} />
         <Stack.Screen name="UpdatedPassword" component={UpdatedPassword} />
@@ -636,6 +639,15 @@ const CustomDrawerContent1 = (props) => {
 
 
 };
+const handleAllocation = () => {
+   
+           
+  props.navigation.navigate('AllocationSheet');
+ 
+
+
+
+};
 
  
   const handleStudents = () => {
@@ -734,6 +746,16 @@ const handleUsers = () => {
 <DrawerItem
   label="ADD Session"
   onPress={handleSession}
+  labelStyle={{
+    fontWeight: 'bold', // Set font weight to bold
+    textAlign: 'center', // Align text center
+    color:'black',
+    fontSize:20
+  }}
+/>
+<DrawerItem
+  label="ALLOCATION SHEET"
+  onPress={handleAllocation}
   labelStyle={{
     fontWeight: 'bold', // Set font weight to bold
     textAlign: 'center', // Align text center
