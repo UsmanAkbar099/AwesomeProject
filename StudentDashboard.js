@@ -84,8 +84,8 @@ const StudentDashboard = (props) => {
         console.log('Fetched application status:', data);
       })
       .catch(error => {
-        console.error('Error fetching application status:', error);
-        Alert.alert('Error', 'Failed to fetch application status. Please try again later.');
+        //console.error('Error fetching application status:', error);
+        //Alert.alert('Error', 'Failed to fetch application status. Please try again later.');
       });
   };
 
