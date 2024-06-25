@@ -34,6 +34,7 @@ import GraderInfo from './GraderInfo';
 import AddBudgetScreen from './AddBudgetScreen';
 import StudentData from './StudentData';
 import AddUsers from './AddUsers';
+import excalfile from './excalfile';
 import UpdatedPassword from'./UpdatePassword';
 import UpdateStudent from'./UpdateStudent';
 import ViewApplication from'./VeiwApplication';
@@ -486,7 +487,7 @@ const App = () => {
         <Stack.Screen name="BudgetHistory" component={BudgetHistory} />
         <Stack.Screen name="AddUsers" component={AddUsers} />
         <Stack.Screen name="AllocationSheet" component={AllocationSheet} />
-
+        <Stack.Screen name="excalfile" component={excalfile} />
         <Stack.Screen name="ViewApplication" component={ViewApplication} />
         <Stack.Screen name="UpdateStudent" component={UpdateStudent} />
         <Stack.Screen name="UpdatedPassword" component={UpdatedPassword} />
@@ -639,6 +640,15 @@ const CustomDrawerContent1 = (props) => {
 
 
 };
+const handleExcal = () => {
+   
+           
+  props.navigation.navigate('excalfile');
+ 
+
+
+
+};
 const handleAllocation = () => {
    
            
@@ -756,6 +766,16 @@ const handleUsers = () => {
 <DrawerItem
   label="ALLOCATION SHEET"
   onPress={handleAllocation}
+  labelStyle={{
+    fontWeight: 'bold', // Set font weight to bold
+    textAlign: 'center', // Align text center
+    color:'black',
+    fontSize:20
+  }}
+/>
+<DrawerItem
+  label="Upload Excal File"
+  onPress={handleExcal}
   labelStyle={{
     fontWeight: 'bold', // Set font weight to bold
     textAlign: 'center', // Align text center
