@@ -1,16 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, StyleSheet, FlatList, Image, TouchableOpacity, ScrollView } from 'react-native';
 import { BASE_URL } from './config';
+
 const Addbudget = (props) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [facultyMembers, setFacultyMembers] = useState([]);
   const [filteredFacultyMembers, setFilteredFacultyMembers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [totalAmount, setTotalAmount] = useState(null);
 
   useEffect(() => {
     // Fetch data from API
     fetchData();
+    fetchTotalAmount();
   }, []);
 
   const fetchData = async () => {
@@ -24,6 +27,23 @@ const Addbudget = (props) => {
       console.error('Error fetching data: ', error);
       setError(error);
       setIsLoading(false);
+    }
+  };
+
+  const fetchTotalAmount = async () => {
+    try {
+      const response = await fetch(`${BASE_URL}/FinancialAidAllocation/api/Committee/GetBalance`);
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Response data:', data); // Log the response data
+        setTotalAmount(data); // Set the total amount
+      } else {
+        console.error('Failed to fetch total amount:', response.statusText);
+        setTotalAmount(null);
+      }
+    } catch (error) {
+      console.error('Error fetching total amount:', error);
+      setTotalAmount(null);
     }
   };
 
@@ -79,6 +99,10 @@ const Addbudget = (props) => {
           <Image source={require('./Add.png')} style={styles.icon} />
         </TouchableOpacity>
       </View>
+      <View style={styles.frombox}>
+        <Text style={styles.wel}>Remaining Amount</Text>
+        <Text style={styles.wels}>{totalAmount !== null ? totalAmount : 'Loading...'}</Text>
+      </View>
       <View style={styles.searchBarContainer}>
         <Image source={require('./Search.png')} style={styles.searchIcon} />
         <TextInput
@@ -89,13 +113,11 @@ const Addbudget = (props) => {
           onChangeText={setSearchQuery}
         />
       </View>
-      
-        <FlatList
-          data={filteredFacultyMembers}
-          renderItem={renderFacultyMember}
-          keyExtractor={(item, index) => item.id ? item.id.toString() : index.toString()}
-        />
-      
+      <FlatList
+        data={filteredFacultyMembers}
+        renderItem={renderFacultyMember}
+        keyExtractor={(item, index) => item.id ? item.id.toString() : index.toString()}
+      />
     </View>
   );
 };
@@ -103,16 +125,39 @@ const Addbudget = (props) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#82b7bf',
     paddingHorizontal: 20,
     paddingTop: 20,
-    backgroundColor: '#82b7bf',
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 20,
+  },
+  frombox: {
+    backgroundColor: '#fff',
+    padding: 20,
+    height: '20%',
+    width: '100%',
+    borderBottomWidth: 1,
+    marginBottom: 10,
+    borderRadius: 30,
+    marginTop: 1,
+  },
+  wel: {
+    fontSize: 34,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    color: 'black',
+    marginLeft: 50,
+  },
+  wels: {
+    fontSize: 34,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    color: 'green',
+    marginLeft: 100,
   },
   icon: {
     width: 30,

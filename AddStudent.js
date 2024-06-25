@@ -35,11 +35,11 @@ const AddStudentForm = () => {
             Alert.alert('Validation Error', 'Please fill out all fields');
             return;
         }
-        const aridRegex = /^\d{4}-Arid-\d{4}$/;
-        if (!aridRegex.test(aridNo)) {
-            Alert.alert('Validation Error', 'Please enter a valid ARID number in the format "yyyy-Arid-xxxx"');
-            return;
-        }
+        // const aridRegex = /^\d{4}-Arid-\d{4}$/;
+        // if (!aridRegex.test(aridNo)) {
+        //     Alert.alert('Validation Error', 'Please enter a valid ARID number in the format "yyyy-Arid-xxxx"');
+        //     return;
+        // }
 
         const formData = new FormData();
         console.log(pic)

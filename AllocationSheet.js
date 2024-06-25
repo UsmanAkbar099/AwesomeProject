@@ -1,237 +1,276 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, StyleSheet, Modal, TouchableOpacity } from 'react-native';
-
+import { View, Text, FlatList, StyleSheet, TouchableOpacity, Modal, ScrollView } from 'react-native';
+import { BASE_URL } from './config';
 const AllocationDetails = ({ route }) => {
-  const session = route?.params?.session || ' Session Fall-2024';
-
   const [acceptedApplications, setAcceptedApplications] = useState([]);
   const [meritBaseShortListed, setMeritBaseShortListed] = useState([]);
   const [needBaseTotalAmount, setNeedBaseTotalAmount] = useState(0);
   const [meritBaseTotalAmount, setMeritBaseTotalAmount] = useState(0);
   const [modalVisible, setModalVisible] = useState(false);
+  const [needBaseMaleCount, setNeedBaseMaleCount] = useState(0);
+  const [needBaseFemaleCount, setNeedBaseFemaleCount] = useState(0);
+  const [meritBaseMaleCount, setMeritBaseMaleCount] = useState(0);
+  const [meritBaseFemaleCount, setMeritBaseFemaleCount] = useState(0);
+  const [displayNeedBase, setDisplayNeedBase] = useState(true); // Start with need-based data
 
   useEffect(() => {
-    const applications = [
-      { aridNo: '2023-3989', name: 'Hameed', degree: 'BSc', gender: 'Male', cgpa: '3.5', prevCgpa: '3.4', exemptedAmount: '5000', applicationID: '1' },
-      { aridNo: '2023-3990', name: 'Hina', degree: 'BSc', gender: 'Female', cgpa: '3.8', prevCgpa: '3.7', exemptedAmount: '6000', applicationID: '2' },
-    ];
+    const fetchData = async () => {
+      try {
+        // Simulating API calls for need-based and merit-based data
+        const needBasedResponse = await fetch(`${BASE_URL}/FinancialAidAllocation/api/Admin/AcceptedApplication`);
+        const meritBasedResponse = await fetch(`${BASE_URL}/FinancialAidAllocation/api/Admin/AcceptedApplication`);
 
-    const meritShortListed = [
-      { aridNo: '2022-3999', name: 'Kainat', degree: 'BSc', semester: '5', section: 'A', gender: 'Female', cgpa: '3.9', prevCgpa: '3.8', position: '1', amount: '7000', studentId: '101' },
-      { aridNo: '2022-4033', name: 'JASON GILL', degree: 'BSc', semester: '5', section: 'B', gender: 'Male', cgpa: '3.6', prevCgpa: '3.5', position: '2', amount: '3000', studentId: '102' },
-    ];
+        const needBasedData = await needBasedResponse.json();
+        const meritBasedData = await meritBasedResponse.json();
 
-    setAcceptedApplications(applications);
-    setMeritBaseShortListed(meritShortListed);
-    setNeedBaseTotalAmount(applications.reduce((total, app) => total + parseInt(app.exemptedAmount), 0));
-    setMeritBaseTotalAmount(meritShortListed.reduce((total, student) => total + parseInt(student.amount), 0));
+        console.log('Fetched Need-Based Data:', needBasedData);
+        console.log('Fetched Merit-Based Data:', meritBasedData);
+
+        // Set state based on fetched data
+        setAcceptedApplications(needBasedData);
+        setMeritBaseShortListed(meritBasedData);
+        setNeedBaseTotalAmount(calculateTotalAmount(needBasedData));
+        setMeritBaseTotalAmount(calculateTotalAmount(meritBasedData));
+
+        // Example calculation for male and female counts
+        setNeedBaseMaleCount(calculateGenderCount(needBasedData, 'M'));
+        setNeedBaseFemaleCount(calculateGenderCount(needBasedData, 'F'));
+        setMeritBaseMaleCount(calculateGenderCount(meritBasedData, 'M'));
+        setMeritBaseFemaleCount(calculateGenderCount(meritBasedData, 'F'));
+
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      }
+    };
+
+    fetchData();
   }, []);
 
-  const calculateGrandTotal = () => {
-    return needBaseTotalAmount + meritBaseTotalAmount;
+  const calculateTotalAmount = (data) => {
+    return data.reduce((total, item) => total + parseFloat(item.amount), 0);
   };
 
-  const renderNeedBaseRow = ({ item }) => (
-    <View style={styles.row}>
-      <Text style={styles.name}>{item.aridNo}</Text>
-      <Text style={styles.name}>{item.name}</Text>
-      <Text style={styles.name}>{item.degree}</Text>
-      <Text style={styles.name}>{item.gender}</Text>
-      <Text style={styles.name}>{item.cgpa}</Text>
-      <Text style={styles.name}>{item.prevCgpa}</Text>
-      <Text style={styles.name}>{item.exemptedAmount}</Text>
-    </View>
-  );
-
-  const renderMeritBaseRow = ({ item }) => (
-    <View style={styles.row}>
-      <Text style={styles.name}>{item.aridNo}</Text>
-      <Text style={styles.name}>{item.name}</Text>
-      <Text style={styles.name}>{item.degree}</Text>
-      <Text style={styles.name}>{item.semester}</Text>
-      <Text style={styles.name}>{item.section}</Text>
-      <Text style={styles.name}>{item.gender}</Text>
-      <Text style={styles.name}>{item.cgpa}</Text>
-      <Text style={styles.name}>{item.prevCgpa}</Text>
-      <Text style={styles.name}>{item.position}</Text>
-      <Text style={styles.name}>{item.amount}</Text>
-    </View>
-  );
+  const calculateGenderCount = (data, gender) => {
+    return data.filter(item => item.gender === gender).length;
+  };
 
   const closeModal = () => {
     setModalVisible(false);
   };
 
+  const renderNeedBaseRow = ({ item, index }) => {
+    const isCGPALower = parseFloat(item.cgpa) < parseFloat(item.prev_cgpa);
+    
+    return (
+      <View style={[styles.row, isCGPALower && styles.highlightedRow]}>
+        <Text style={[styles.cell, styles.lineNumber]}>{index + 1}</Text>
+        <Text style={[styles.cell, isCGPALower && styles.highlightedCell]}>{item.arid_no}</Text>
+        <Text style={[styles.cell, isCGPALower && styles.highlightedCell]}>{item.name}</Text>
+        <Text style={[styles.cell, isCGPALower && styles.highlightedCell]}>{item.degree}</Text>
+        <Text style={[styles.cell, isCGPALower && styles.highlightedCell]}>{item.gender}</Text>
+        <Text style={[styles.cell, isCGPALower && styles.highlightedCell]}>{item.cgpa}</Text>
+        <Text style={[styles.cell, isCGPALower && styles.highlightedCell]}>{item.prev_cgpa}</Text>
+        <Text style={[styles.cell, isCGPALower && styles.highlightedCell]}>{item.amount}</Text>
+      </View>
+    );
+  };
+
+  const renderMeritBaseRow = ({ item, index }) => {
+    const isCGPALower = parseFloat(item.cgpa) < parseFloat(item.prev_cgpa);
+    
+    return (
+      <View style={[styles.row, isCGPALower && styles.highlightedRow]}>
+        <Text style={[styles.cell, styles.lineNumber]}>{index + 1}</Text>
+        <Text style={[styles.cell, isCGPALower && styles.highlightedCell]}>{item.arid_no}</Text>
+        <Text style={[styles.cell, isCGPALower && styles.highlightedCell]}>{item.name}</Text>
+        <Text style={[styles.cell, isCGPALower && styles.highlightedCell]}>{item.degree}</Text>
+        <Text style={[styles.cell, isCGPALower && styles.highlightedCell]}>{item.semester}</Text>
+        <Text style={[styles.cell, isCGPALower && styles.highlightedCell]}>{item.section}</Text>
+        <Text style={[styles.cell, isCGPALower && styles.highlightedCell]}>{item.gender}</Text>
+        <Text style={[styles.cell, isCGPALower && styles.highlightedCell]}>{item.cgpa}</Text>
+        <Text style={[styles.cell, isCGPALower && styles.highlightedCell]}>{item.prev_cgpa}</Text>
+        <Text style={[styles.cell, isCGPALower && styles.highlightedCell]}>{item.amount}</Text>
+      </View>
+    );
+  };
+
+  // Calculate grand total amount
+  const grandTotalAmount = needBaseTotalAmount + meritBaseTotalAmount;
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Allocation Details</Text>
+
+      {/* Toggle Buttons */}
+      <View style={styles.toggleContainer}>
+        <TouchableOpacity onPress={() => setDisplayNeedBase(true)} style={[styles.toggleButton, displayNeedBase && styles.activeButton]}>
+          <Text style={styles.toggleText}>Need-Based Allocation</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => setDisplayNeedBase(false)} style={[styles.toggleButton, !displayNeedBase && styles.activeButton]}>
+          <Text style={styles.toggleText}>Merit-Based Allocation</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Modal for Allocation Summary */}
       <TouchableOpacity onPress={() => setModalVisible(true)}>
         <Text style={styles.summaryText}>Allocation Summary</Text>
       </TouchableOpacity>
-      <Modal
-        visible={modalVisible}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={closeModal}
-      >
+      
+
+      {/* Modal Content */}
+      <Modal visible={modalVisible} animationType="slide" transparent={true} onRequestClose={closeModal}>
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Allocation Summary</Text>
-            <Text style={styles.sectionTitles}>Need-Based Total Amount: {needBaseTotalAmount}</Text>
-            <Text style={styles.sectionTitles} >Merit-Based Total Amount: {meritBaseTotalAmount}</Text>
-            <Text style={styles.sectionTitles}>Grand Total: {calculateGrandTotal()}</Text>
+            {displayNeedBase ? (
+              <>
+                <Text style={styles.modalText}>Need-Based Total Amount: {needBaseTotalAmount}</Text>
+                <Text style={styles.modalText}>Male Count: {needBaseMaleCount}</Text>
+                <Text style={styles.modalText}>Female Count: {needBaseFemaleCount}</Text>
+              </>
+            ) : (
+              <>
+                <Text style={styles.modalText}>Merit-Based Total Amount: {meritBaseTotalAmount}</Text>
+                <Text style={styles.modalText}>Male Count: {meritBaseMaleCount}</Text>
+                <Text style={styles.modalText}>Female Count: {meritBaseFemaleCount}</Text>
+              </>
+            )}
+            <Text style={styles.modalText}>Grand Total Amount: {grandTotalAmount}</Text>
             <TouchableOpacity onPress={closeModal}>
               <Text style={styles.closeButton}>Close</Text>
             </TouchableOpacity>
           </View>
         </View>
       </Modal>
-      <FlatList
-        data={[{ key: 'needBase' }, { key: 'meritBase' }]}
-        renderItem={({ item }) => (
-          <>
-            {item.key === 'needBase' && (
-              <>
-                <Text style={styles.sectionTitle}>Need-Based Allocations</Text>
-                <FlatList
-                  data={acceptedApplications}
-                  renderItem={renderNeedBaseRow}
-                  keyExtractor={(item) => item.applicationID}
-                  ListHeaderComponent={() => (
-                    <View style={styles.header}>
-                      <View style={styles.columnHeader}><Text>Arid No</Text></View>
-                      <View style={styles.columnHeader}><Text>Name</Text></View>
-                      <View style={styles.columnHeader}><Text>Discipline</Text></View>
-                      <View style={styles.columnHeader}><Text>Gender</Text></View>
-                      <View style={styles.columnHeader}><Text>Current CGPA</Text></View>
-                      <View style={styles.columnHeader}><Text>Previous CGPA</Text></View>
-                      <View style={styles.columnHeader}><Text>Fee Exempted</Text></View>
-                    </View>
-                  )}
-                />
-                 <Text style={styles.totalAmount}>Total Amount: {needBaseTotalAmount}</Text>
-              </>
-            )}
-            {item.key === 'meritBase' && (
-              <>
-                <Text style={styles.sectionTitle}>Merit-Based Allocations</Text>
-                <FlatList
-                  data={meritBaseShortListed}
-                  renderItem={renderMeritBaseRow}
-                  keyExtractor={(item) => item.studentId.toString()}
-                  ListHeaderComponent={() => (
-                    <View style={styles.header}>
-                      <View style={styles.columnHeader}><Text>Arid No</Text></View>
-                      <View style={styles.columnHeader}><Text>Name</Text></View>
-                      <View style={styles.columnHeader}><Text>Discipline</Text></View>
-                      <View style={styles.columnHeader}><Text>Semester</Text></View>
-                      <View style={styles.columnHeader}><Text>Section</Text></View>
-                      <View style={styles.columnHeader}><Text>Gender</Text></View>
-                      <View style={styles.columnHeader}><Text>Current CGPA</Text></View>
-                      <View style={styles.columnHeader}><Text>Previous CGPA</Text></View>
-                      <View style={styles.columnHeader}><Text>Position</Text></View>
-                      <View style={styles.columnHeader}><Text>Amount</Text></View>
-                    </View>
-                  )}
-                />
-                <Text style={styles.totalAmount}>Total Amount: {meritBaseTotalAmount}</Text>
-              </>
-            )}
-          </>
-        )}
-        keyExtractor={(item) => item.key}
-        ListFooterComponent={() => (
-          <Text style={styles.summaryTexts}>{session} Allocation Summary</Text>
-        )}
-      />
+
+      {/* Main Content */}
+      {displayNeedBase ? (
+        <>
+          <Text style={styles.sectionTitle}>Need-Based Allocations</Text>
+          <FlatList
+            data={acceptedApplications}
+            renderItem={renderNeedBaseRow}
+            keyExtractor={(item) => item.applicationID.toString()}
+          />
+          <Text style={styles.modalText}>Total Amount: {needBaseTotalAmount}</Text>
+        </>
+      ) : (
+        <>
+          <Text style={styles.sectionTitle}>Merit-Based Allocations</Text>
+          <FlatList
+            data={meritBaseShortListed}
+            renderItem={renderMeritBaseRow}
+            keyExtractor={(item) => item.student_id.toString()}
+          />
+          <Text style={styles.modalText}>Total Amount: {meritBaseTotalAmount}</Text>
+        </>
+      )}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        padding: 20,
-        backgroundColor: '#82b7bf',
-      },
-      title: {
-        fontSize: 35,
-        fontWeight: 'bold',
-        textAlign: 'center',
-      },
-      sectionTitle: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        marginVertical: 10,
-      },
-      name:{
-        color:'green',
-        fontSize: 15,
-
-      },
-      
-      sectionTitles: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        marginVertical: 10,
-        color:'green',
-      },
-      header: {
-        flexDirection: 'row',
-        justifyContent: 'space-around',
-        padding: 10,
-        backgroundColor: 'black',
-      },
-      columnHeader: {
-        flex: 1,
-        alignItems: 'center',
-      },
-      row: {
-        flexDirection: 'row',
-        justifyContent: 'space-around',
-        padding: 10,
-        borderBottomWidth: 1,
-        borderBottomColor: 'black',
-      },
-      totalAmount: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        textAlign: 'center',
-        marginVertical: 20,
-        color:'black',
-      },
-      summaryText: {
-        textAlign: 'center',
-        fontSize: 16,
-        marginVertical: 10,
-        textDecorationLine: 'underline',
-        color: 'blue',
-      },
-      modalContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-      },
-      modalContent: {
-        backgroundColor: '#fff',
-        padding: 20,
-        borderRadius: 10,
-        elevation: 5,
-        minWidth: 300,
-      },
-      modalTitle: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        marginBottom: 10,
-        textAlign: 'center',
-        color:'black',
-      },
-      closeButton: {
-        textAlign: 'center',
-        marginTop: 20,
-        color: 'blue',
-      },
-    });
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+    padding: 20,
+  },
+  totalAmount:{
+color:'black',
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    color:"green",
+    marginBottom: 10,
+  },
+  toggleContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginVertical: 10,
+  },
+  toggleButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 5,
+  },
+  activeButton: {
+    backgroundColor: '#62d1bc',
+  },
+  toggleText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  summaryText: {
+    textAlign: 'center',
+    fontSize: 16,
+    marginVertical: 10,
+    textDecorationLine: 'underline',
+    color: 'blue',
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    padding: 20,
+    borderRadius: 10,
+    elevation: 5,
+    minWidth: 300,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  modalText: {
+    fontSize: 16,
+    marginBottom: 10,
+    color:'green',
+  },
+  closeButton: {
+    textAlign: 'center',
+    marginTop: 20,
+    color: 'blue',
+    fontSize: 16,
+    textDecorationLine: 'underline',
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginVertical: 10,
+  },
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ccc',
+  },
+  cell: {
+    flex: 1,
+    textAlign: 'center',
+    color: 'black',
+  },
+  // New styles for highlighting
+  highlightedRow: {
+    backgroundColor: '#FFC0CB', // Light pink background
+  },
+  highlightedCell: {
+    color: 'red', // Red text color for highlighted cells
+  }, totalAmount: {
+    textAlign: 'center',
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginTop: 10,
+  },
+});
 
 export default AllocationDetails;
