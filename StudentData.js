@@ -190,7 +190,7 @@ const styles = StyleSheet.create({
     padding: 10,
   },
   highlighted: {
-    backgroundColor: 'yellow',
+    backgroundColor: 'pink',
   },
   nameContainer: {
     flexDirection: 'column',
