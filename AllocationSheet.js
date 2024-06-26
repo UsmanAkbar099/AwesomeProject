@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, Modal, ScrollView } from 'react-native';
+import { View, Text, FlatList, StyleSheet, TouchableOpacity, Modal } from 'react-native';
 import { BASE_URL } from './config';
+
 const AllocationDetails = ({ route }) => {
   const [acceptedApplications, setAcceptedApplications] = useState([]);
   const [meritBaseShortListed, setMeritBaseShortListed] = useState([]);
@@ -18,7 +19,7 @@ const AllocationDetails = ({ route }) => {
       try {
         // Simulating API calls for need-based and merit-based data
         const needBasedResponse = await fetch(`${BASE_URL}/FinancialAidAllocation/api/Admin/AcceptedApplication`);
-        const meritBasedResponse = await fetch(`${BASE_URL}/FinancialAidAllocation/api/Admin/AcceptedApplication`);
+        const meritBasedResponse = await fetch(`${BASE_URL}/FinancialAidAllocation/api/Admin/GetMeritBaseShortListedStudent`);
 
         const needBasedData = await needBasedResponse.json();
         const meritBasedData = await meritBasedResponse.json();
@@ -47,7 +48,10 @@ const AllocationDetails = ({ route }) => {
   }, []);
 
   const calculateTotalAmount = (data) => {
-    return data.reduce((total, item) => total + parseFloat(item.amount), 0);
+    return data.reduce((total, item) => {
+      const amount = parseFloat(item.amount);
+      return total + (isNaN(amount) ? 0 : amount);
+    }, 0);
   };
 
   const calculateGenderCount = (data, gender) => {
@@ -116,25 +120,17 @@ const AllocationDetails = ({ route }) => {
         <Text style={styles.summaryText}>Allocation Summary</Text>
       </TouchableOpacity>
       
-
       {/* Modal Content */}
       <Modal visible={modalVisible} animationType="slide" transparent={true} onRequestClose={closeModal}>
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Allocation Summary</Text>
-            {displayNeedBase ? (
-              <>
-                <Text style={styles.modalText}>Need-Based Total Amount: {needBaseTotalAmount}</Text>
-                <Text style={styles.modalText}>Male Count: {needBaseMaleCount}</Text>
-                <Text style={styles.modalText}>Female Count: {needBaseFemaleCount}</Text>
-              </>
-            ) : (
-              <>
-                <Text style={styles.modalText}>Merit-Based Total Amount: {meritBaseTotalAmount}</Text>
-                <Text style={styles.modalText}>Male Count: {meritBaseMaleCount}</Text>
-                <Text style={styles.modalText}>Female Count: {meritBaseFemaleCount}</Text>
-              </>
-            )}
+            <Text style={styles.modalText}>Need-Based Total Amount: {needBaseTotalAmount}</Text>
+            <Text style={styles.modalText}>Need-Based Male Count: {needBaseMaleCount}</Text>
+            <Text style={styles.modalText}>Need-Based Female Count: {needBaseFemaleCount}</Text>
+            <Text style={styles.modalText}>Merit-Based Total Amount: {meritBaseTotalAmount}</Text>
+            <Text style={styles.modalText}>Merit-Based Male Count: {meritBaseMaleCount}</Text>
+            <Text style={styles.modalText}>Merit-Based Female Count: {meritBaseFemaleCount}</Text>
             <Text style={styles.modalText}>Grand Total Amount: {grandTotalAmount}</Text>
             <TouchableOpacity onPress={closeModal}>
               <Text style={styles.closeButton}>Close</Text>
@@ -150,9 +146,9 @@ const AllocationDetails = ({ route }) => {
           <FlatList
             data={acceptedApplications}
             renderItem={renderNeedBaseRow}
-            keyExtractor={(item) => item.applicationID.toString()}
+            keyExtractor={(item, index) => `${item.applicationID}-${index}`}
           />
-          <Text style={styles.modalText}>Total Amount: {needBaseTotalAmount}</Text>
+          <Text style={styles.totalAmount}>Total Amount: {needBaseTotalAmount}</Text>
         </>
       ) : (
         <>
@@ -160,9 +156,9 @@ const AllocationDetails = ({ route }) => {
           <FlatList
             data={meritBaseShortListed}
             renderItem={renderMeritBaseRow}
-            keyExtractor={(item) => item.student_id.toString()}
+            keyExtractor={(item, index) => `${item.student_id}-${index}`}
           />
-          <Text style={styles.modalText}>Total Amount: {meritBaseTotalAmount}</Text>
+          <Text style={styles.totalAmount}>Total Amount: {meritBaseTotalAmount}</Text>
         </>
       )}
     </View>
@@ -175,14 +171,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     padding: 20,
   },
-  totalAmount:{
-color:'black',
-  },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
     textAlign: 'center',
-    color:"green",
+    color: 'green',
     marginBottom: 10,
   },
   toggleContainer: {
@@ -233,7 +226,7 @@ color:'black',
   modalText: {
     fontSize: 16,
     marginBottom: 10,
-    color:'green',
+    color: 'green',
   },
   closeButton: {
     textAlign: 'center',
@@ -259,17 +252,18 @@ color:'black',
     textAlign: 'center',
     color: 'black',
   },
-  // New styles for highlighting
   highlightedRow: {
     backgroundColor: '#FFC0CB', // Light pink background
   },
   highlightedCell: {
     color: 'red', // Red text color for highlighted cells
-  }, totalAmount: {
+  },
+  totalAmount: {
     textAlign: 'center',
     fontSize: 18,
     fontWeight: 'bold',
     marginTop: 10,
+    color:'green'
   },
 });
 

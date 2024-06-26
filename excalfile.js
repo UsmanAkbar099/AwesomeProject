@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import DocumentPicker from 'react-native-document-picker';
-
+import { BASE_URL } from './config';
 const FilePickerScreen = () => {
   const [fileName, setFileName] = useState(null);
   const [fileDetails, setFileDetails] = useState(null);
@@ -25,14 +25,14 @@ const FilePickerScreen = () => {
   const uploadFile = async () => {
     if (fileDetails) {
       const formData = new FormData();
-      formData.append('file', {
+      formData.append('enrollment', {
         uri: fileDetails.uri,
         type: fileDetails.type,
         name: fileDetails.name,
       });
 
       try {
-        const response = await fetch('YOUR_API_ENDPOINT', {
+        const response = await fetch(`${BASE_URL}/FinancialAidAllocation/api/Admin/UploadFile`, {
           method: 'POST',
           body: formData,
           headers: {
@@ -41,11 +41,14 @@ const FilePickerScreen = () => {
         });
         const result = await response.json();
         console.log('Upload successful:', result);
+        Alert.alert('Upload Successful', JSON.stringify(result, null, 2));
       } catch (error) {
         console.error('Error uploading file:', error);
+        Alert.alert('Upload Failed', 'There was an error uploading the file.');
       }
     } else {
       console.log('No file selected');
+      Alert.alert('No File Selected', 'Please select a file to upload.');
     }
   };
 
@@ -77,7 +80,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   button: {
-    backgroundColor: '#007bff',
+    backgroundColor: 'green',
     padding: 15,
     borderRadius: 5,
     marginTop: 20,
@@ -102,7 +105,7 @@ const styles = StyleSheet.create({
   fileName: {
     marginTop: 20,
     fontSize: 20,
-    color: 'green',
+    color: 'red',
   },
 });
 

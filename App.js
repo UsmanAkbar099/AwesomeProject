@@ -774,7 +774,7 @@ const handleUsers = () => {
   }}
 />
 <DrawerItem
-  label="Upload Excal File"
+  label="Upload Excel File"
   onPress={handleExcal}
   labelStyle={{
     fontWeight: 'bold', // Set font weight to bold
