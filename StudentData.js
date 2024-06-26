@@ -131,7 +131,7 @@ const StudentData = (props) => {
         <Image source={require('./Search.png')} style={styles.searchIcon} />
         <TextInput
           style={styles.searchBar}
-          placeholder="Search by ARID NO"
+          placeholder="Search by ARID NOs"
           placeholderTextColor="black"
           value={searchQuery}
           onChangeText={setSearchQuery}
