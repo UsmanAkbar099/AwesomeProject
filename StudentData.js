@@ -58,7 +58,7 @@ const StudentData = (props) => {
   const handleNamePress = (item) => {
     Alert.alert(
       "Student Details",
-      `Name: ${item.name || 'N/A'}\nStudent ID: ${item.student_id || 'N/A'}\nARID NO: ${item.arid_no || 'N/A'}\nSemester: ${item.semester || 'N/A'}\nSection: ${item.section || 'N/A'}\nCGPA: ${item.cgpa || 'N/A'}`,
+      `Name: ${item.name || 'N/A'}\nStudent ID: ${item.student_id || 'N/A'}\nARID NO: ${item.arid_no || 'N/A'}\nSemester: ${item.semester || 'N/A'}\nSection: ${item.section || 'N/A'}\nCGPA: ${item.cgpa || 'N/A'}\nPrevious Cgpa: ${item.prev_cgpa || 'N/A'}`,
       [{ text: "OK" }]
     );
   };
@@ -75,27 +75,31 @@ const StudentData = (props) => {
     );
   };
 
-  const renderStudent = ({ item }) => (
-    <View style={styles.studentContainer}>
-      <TouchableOpacity style={styles.nameContainer} onPress={() => handleNamePress(item)}>
-        <Text style={styles.studentName} numberOfLines={1} ellipsizeMode="tail">{item.name || 'N/A'}</Text>
-        <Text style={styles.aridNoText}>{item.arid_no || 'N/A'}</Text>
-      </TouchableOpacity>
-      <View style={styles.imageContainer}>
-        {item.profile_image ? (
-          <Image
-            source={{ uri: `${BASE_URL}/FinancialAidAllocation/Content/ProfileImages/` + item.profile_image }}
-            style={styles.studentImage}
-          />
-        ) : (
-          <Image
-            source={require('./logo.png')}
-            style={styles.studentImage}
-          />
-        )}
+  const renderStudent = ({ item }) => {
+    const isHighlighted = item.cgpa && item.prev_cgpa && item.cgpa < item.prev_cgpa;
+
+    return (
+      <View style={[styles.studentContainer, isHighlighted && styles.highlighted]}>
+        <TouchableOpacity style={styles.nameContainer} onPress={() => handleNamePress(item)}>
+          <Text style={styles.studentName} numberOfLines={1} ellipsizeMode="tail">{item.name || 'N/A'}</Text>
+          <Text style={styles.aridNoText}>{item.arid_no || 'N/A'}</Text>
+        </TouchableOpacity>
+        <View style={styles.imageContainer}>
+          {item.profile_image ? (
+            <Image
+              source={{ uri: `${BASE_URL}/FinancialAidAllocation/Content/ProfileImages/` + item.profile_image }}
+              style={styles.studentImage}
+            />
+          ) : (
+            <Image
+              source={require('./logo.png')}
+              style={styles.studentImage}
+            />
+          )}
+        </View>
       </View>
-    </View>
-  );
+    );
+  };
 
   if (isLoading) {
     return (
@@ -184,6 +188,9 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     borderRadius: 10,
     padding: 10,
+  },
+  highlighted: {
+    backgroundColor: 'yellow',
   },
   nameContainer: {
     flexDirection: 'column',
