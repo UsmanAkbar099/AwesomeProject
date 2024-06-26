@@ -85,7 +85,7 @@ const SemesterScreen = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>Select Session</Text>
+      <Text style={styles.label}>Select Sessioon</Text>
       <RNPickerSelect
         onValueChange={(value) => setSemester(value)}
         items={[
