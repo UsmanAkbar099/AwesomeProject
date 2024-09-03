@@ -30,7 +30,7 @@ const AssignGrader = (props) => {
 
   const fetchData = async () => {
     try {
-      const response = await fetch(`${BASE_URL}/FinancialAidAllocation/api/Admin/unAssignedGraders`);
+      const response = await fetch(`${BASE_URL}/FinancialAidAllocation/api/Admin/unAssignedGraders1`);
       if (response.ok) {
         const data = await response.json();
         console.log('Fetched data:', data);
@@ -124,7 +124,15 @@ const AssignGrader = (props) => {
   };
 
   const handleTouchFlatlist = (item) => {
-    //props.navigation.navigate("GraderInfo", { grader: item });
+    Alert.alert(
+      "Choose Action",
+      "Do you want to assign grader?",
+      [
+        { text: "Reject", onPress: () => props.navigation.navigate('AssignGrader') },
+        { text: "Continue", onPress: () => props.navigation.navigate('') },
+        { text: "Cancel", style: "cancel" }
+      ]
+    );
   };
 
   useEffect(() => {
@@ -134,12 +142,18 @@ const AssignGrader = (props) => {
     setFilteredAssignGrader(filteredData);
   }, [searchQuery, assignGrader]);
 
-  const renderFacultyMember = ({ item }) => (
-    <View style={styles.facultyMemberContainer}>
+  const renderFacultyMember = ({ item }) => {
+    const isHighlighted = item.AverageRating< 4 && item.AverageRating ;
+    
+
+    return (
+      <View style={[styles.facultyMemberContainer, isHighlighted && styles.highlighted]}>
       <TouchableOpacity onPress={() => handleTouchFlatlist(item)}>
         <View style={styles.nameContainer}>
           <Text style={styles.facultyMemberName}>{item.name}</Text>
           <Text style={styles.aridNoText}>{item.arid_no}</Text>
+          
+          <Text style={styles.aridNoTexts}> Rating Previous semester:{item.AverageRating  } </Text>
         </View>
       </TouchableOpacity>
       <TouchableOpacity
@@ -150,9 +164,34 @@ const AssignGrader = (props) => {
         <View style={[styles.addButton, { backgroundColor: item.assigned || assignedGraders[item.student_id] ? 'gray' : 'green' }]}>
           <Text style={styles.addButtonText}>{item.assigned || assignedGraders[item.student_id] ? 'Assigned' : 'Assign'}</Text>
         </View>
-      </TouchableOpacity>
-    </View>
-  );
+      </TouchableOpacity>  
+      </View>
+    );
+  };
+
+
+  // const renderFacultyMember = ({ item }) => (
+     
+  //   <View style={styles.facultyMemberContainer}>
+  //     <TouchableOpacity onPress={() => handleTouchFlatlist(item)}>
+  //       <View style={styles.nameContainer}>
+  //         <Text style={styles.facultyMemberName}>{item.name}</Text>
+  //         <Text style={styles.aridNoText}>{item.arid_no}</Text>
+          
+  //         <Text style={styles.aridNoTexts}>{item.AverageRating  } </Text>
+  //       </View>
+  //     </TouchableOpacity>
+  //     <TouchableOpacity
+  //       onPress={() => handleAssignButtonPress(item)}
+  //       disabled={item.assigned || assignedGraders[item.student_id]}
+  //       style={styles.assignButtonContainer}
+  //     >
+  //       <View style={[styles.addButton, { backgroundColor: item.assigned || assignedGraders[item.student_id] ? 'gray' : 'green' }]}>
+  //         <Text style={styles.addButtonText}>{item.assigned || assignedGraders[item.student_id] ? 'Assigned' : 'Assign'}</Text>
+  //       </View>
+  //     </TouchableOpacity>
+  //   </View>
+  // );
 
   const renderModalFacultyMember = ({ item }) => (
     <View style={styles.facultyMemberContainer}>
@@ -279,6 +318,14 @@ const styles = StyleSheet.create({
     height: 20,
     marginRight: 10,
   },
+  highlighted: {
+    backgroundColor: 'pink',
+  },
+  
+  highlighteds: {
+    backgroundColor: 'white',
+  },
+
   searchBar: {
     flex: 1,
     height: 40,
@@ -311,7 +358,12 @@ const styles = StyleSheet.create({
   },
   aridNoText: {
     fontSize: 16,
-    color: 'gray',
+    color: 'green',
+  },
+  
+  aridNoTexts: {
+    fontSize: 16,
+    color: 'red',
   },
   addButton: {
     backgroundColor: 'green',

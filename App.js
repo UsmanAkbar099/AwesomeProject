@@ -25,6 +25,7 @@ import RNExitApp from 'react-native-exit-app';
 import BudgetHistory from './AddBudget';
 import AddCommitteeMember from './AddCommitteeMember';
 import FacultyMember from './FacultyMember';
+import MeritBaseReject from './MeritBaseReject'
 import AddPolicies from './AddPolicies';
 import AddStudent from './AddStudent';
 import AddFacultyMembers from './AddFacultyMembers';
@@ -489,6 +490,7 @@ const App = () => {
         <Stack.Screen name="AllocationSheet" component={AllocationSheet} />
         <Stack.Screen name="excalfile" component={excalfile} />
         <Stack.Screen name="ViewApplication" component={ViewApplication} />
+        <Stack.Screen name="MeritBaseReject" component={MeritBaseReject} />
         <Stack.Screen name="UpdateStudent" component={UpdateStudent} />
         <Stack.Screen name="UpdatedPassword" component={UpdatedPassword} />
         <Stack.Screen name="AddBudgetScreen" component={AddBudgetScreen} />
@@ -649,6 +651,15 @@ const handleExcal = () => {
 
 
 };
+const handleMerit = () => {
+   
+           
+  props.navigation.navigate('MeritBaseReject');
+ 
+
+
+
+};
 const handleAllocation = () => {
    
            
@@ -756,6 +767,16 @@ const handleUsers = () => {
 <DrawerItem
   label="ADD Session"
   onPress={handleSession}
+  labelStyle={{
+    fontWeight: 'bold', // Set font weight to bold
+    textAlign: 'center', // Align text center
+    color:'black',
+    fontSize:20
+  }}
+/>
+<DrawerItem
+  label="Merit Base reject"
+  onPress={handleMerit}
   labelStyle={{
     fontWeight: 'bold', // Set font weight to bold
     textAlign: 'center', // Align text center

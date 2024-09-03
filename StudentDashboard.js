@@ -115,7 +115,9 @@ const StudentDashboard = (props) => {
   const navigateToMerit = () => {
     props.navigation.navigate("MeritBaseCriteria");
   };
-
+  const navigateToMerits = () => {
+    
+  };
   const navigateToNeed = () => {
     props.navigation.navigate("NeedBaseCriteria");
   };
@@ -131,6 +133,17 @@ const StudentDashboard = (props) => {
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
       }
     >
+        <TouchableOpacity style={styles.buttonss} onPress={navigateToMerits}>
+          
+          <Text style={styles.buttonTexts}>Accept</Text>
+          
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.buttonss} onPress={navigateToScholarship}>
+          
+        <Text style={styles.buttonTextss}>Decline</Text>
+          
+        </TouchableOpacity>
+       
       <View style={styles.frombox}>
         <Text style={styles.wel}>Welcome</Text>
         {studentInfo && (
@@ -153,8 +166,10 @@ const StudentDashboard = (props) => {
           </View>
         )}
       </View>
+      
 
       <View style={styles.buttonContainer}>
+        
         <TouchableOpacity style={styles.button} onPress={navigateToScholarship}>
           <Image source={scholarship} style={{ width: 60, height: 60 }} />
           <Text style={styles.buttonText}>Apply for Scholarship</Text>
@@ -264,6 +279,19 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: 'black',
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  buttonTexts: {
+    flexDirection: 'row',
+    color: 'green',
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  
+  buttonTextss: {
+    flexDirection: 'row',
+    color: 'red',
     fontSize: 20,
     fontWeight: 'bold',
   },
